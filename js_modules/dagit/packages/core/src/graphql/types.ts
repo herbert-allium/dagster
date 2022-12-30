@@ -2935,6 +2935,7 @@ export type RunConfigSchema = {
   allConfigTypes: Array<ConfigType>;
   isRunConfigValid: PipelineConfigValidationResult;
   rootConfigType: ConfigType;
+  rootDefaultYaml: Scalars['String'];
 };
 
 export type RunConfigSchemaIsRunConfigValidArgs = {
