@@ -12,6 +12,7 @@ from dagster import (
     resource,
 )
 from dagster._config import ConfigTypeKind, Map, resolve_to_config_type
+from dagster._config.snap import ConfigSchemaSnapshot, ConfigTypeSnap
 from dagster._core.snap import (
     ConfigEnumValueSnap,
     build_config_schema_snapshot,
@@ -19,9 +20,8 @@ from dagster._core.snap import (
 )
 from dagster._legacy import ModeDefinition, pipeline
 from dagster._serdes import (
-    deserialize_json_to_dagster_namedtuple,
-    deserialize_value,
-    serialize_dagster_namedtuple,
+    deserialize,
+    serialize,
     serialize_pp,
 )
 
@@ -96,7 +96,7 @@ def test_field_things():
     assert field_snap_dict["opt"].default_value_as_json_str is None
     assert field_snap_dict["opt_with_default"].is_required is False
     assert field_snap_dict["opt_with_default"].default_provided is True
-    assert deserialize_value(field_snap_dict["opt_with_default"].default_value_as_json_str) == 2
+    assert deserialize(field_snap_dict["opt_with_default"].default_value_as_json_str) == 2
 
     assert field_snap_dict["req_with_desc"].is_required is True
     assert field_snap_dict["req_with_desc"].description == "A desc"
@@ -218,9 +218,7 @@ def test_kitchen_sink():
 
     kitchen_sink_snap = snap_from_dagster_type(kitchen_sink)
 
-    rehydrated_snap = deserialize_json_to_dagster_namedtuple(
-        serialize_dagster_namedtuple(kitchen_sink_snap)
-    )
+    rehydrated_snap = deserialize(serialize(kitchen_sink_snap), ConfigTypeSnap)
     assert kitchen_sink_snap == rehydrated_snap
 
 
@@ -236,8 +234,8 @@ def test_simple_pipeline_smoke_test():
     config_schema_snapshot = build_config_schema_snapshot(single_solid_job)
     assert config_schema_snapshot.all_config_snaps_by_key
 
-    serialized = serialize_dagster_namedtuple(config_schema_snapshot)
-    rehydrated_config_schema_snapshot = deserialize_json_to_dagster_namedtuple(serialized)
+    serialized = serialize(config_schema_snapshot)
+    rehydrated_config_schema_snapshot = deserialize(serialized, ConfigSchemaSnapshot)
     assert config_schema_snapshot == rehydrated_config_schema_snapshot
 
 
@@ -419,6 +417,6 @@ def test_scalar_union():
 def test_historical_config_type_snap(snapshot):
     old_snap_json = """{"__class__": "ConfigTypeSnap", "description": "", "enum_values": [], "fields": [], "given_name": "kjdkfjdkfjdkj", "key": "ksjdkfjdkfjd", "kind": {"__enum__": "ConfigTypeKind.STRICT_SHAPE"}, "type_param_keys": []}"""
 
-    old_snap = deserialize_json_to_dagster_namedtuple(old_snap_json)
+    old_snap = deserialize(old_snap_json, ConfigTypeSnap)
 
     snapshot.assert_match(serialize_pp(old_snap))

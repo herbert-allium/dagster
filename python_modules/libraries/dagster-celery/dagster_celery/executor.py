@@ -10,7 +10,7 @@ from dagster import (
 )
 from dagster._core.execution.retries import RetryMode, get_retries_config
 from dagster._grpc.types import ExecuteStepArgs
-from dagster._serdes import pack_value
+from dagster._serdes import pack
 
 from .config import DEFAULT_CONFIG, dict_wrapper
 from .defaults import broker_url, result_backend
@@ -118,7 +118,7 @@ def _submit_task(app, plan_context, step, queue, priority, known_state):
 
     task = create_task(app)
     task_signature = task.si(
-        execute_step_args_packed=pack_value(execute_step_args),
+        execute_step_args_packed=pack(execute_step_args),
         executable_dict=plan_context.reconstructable_pipeline.to_dict(),
     )
     return task_signature.apply_async(

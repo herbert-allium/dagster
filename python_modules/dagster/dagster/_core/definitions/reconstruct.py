@@ -39,7 +39,7 @@ from dagster._core.origin import (
     RepositoryPythonOrigin,
 )
 from dagster._core.selector import parse_solid_selection
-from dagster._serdes import pack_value, unpack_value, whitelist_for_serdes
+from dagster._serdes import pack, unpack, whitelist_for_serdes
 from dagster._utils import frozenlist, make_readonly_value
 
 from .events import AssetKey
@@ -340,14 +340,14 @@ class ReconstructablePipeline(
     def for_module(module: str, fn_name: str) -> ReconstructablePipeline:
         return bootstrap_standalone_recon_pipeline(ModuleCodePointer(module, fn_name, os.getcwd()))
 
-    def to_dict(self) -> Mapping[str, Any]:
-        return pack_value(self)  # type: ignore
+    def to_dict(self) -> Mapping[str, object]:
+        return pack(self)
 
     @staticmethod
     def from_dict(val: Mapping[str, Any]) -> ReconstructablePipeline:
         check.mapping_param(val, "val")
 
-        inst = unpack_value(val)
+        inst = unpack(val)
         check.invariant(
             isinstance(inst, ReconstructablePipeline),
             "Deserialized object is not instance of ReconstructablePipeline, got {type}".format(

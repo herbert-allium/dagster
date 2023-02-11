@@ -7,7 +7,7 @@ from dagster._core.definitions.reconstruct import ReconstructablePipeline
 from dagster._core.events import EngineEventData
 from dagster._core.execution.api import create_execution_plan, execute_plan_iterator
 from dagster._grpc.types import ExecuteStepArgs
-from dagster._serdes import serialize_dagster_namedtuple, unpack_value
+from dagster._serdes import serialize, unpack
 
 from .core_execution_loop import DELEGATE_MARKER
 from .executor import CeleryExecutor
@@ -16,7 +16,7 @@ from .executor import CeleryExecutor
 def create_task(celery_app, **task_kwargs):
     @celery_app.task(bind=True, name="execute_plan", **task_kwargs)
     def _execute_plan(self, execute_step_args_packed, executable_dict):
-        execute_step_args = unpack_value(
+        execute_step_args = unpack(
             check.dict_param(
                 execute_step_args_packed,
                 "execute_step_args_packed",
@@ -71,7 +71,7 @@ def create_task(celery_app, **task_kwargs):
         ):
             events.append(step_event)
 
-        serialized_events = [serialize_dagster_namedtuple(event) for event in events]
+        serialized_events = [serialize(event) for event in events]
         return serialized_events
 
     return _execute_plan

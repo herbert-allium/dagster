@@ -10,7 +10,7 @@ from dagster import (
     op,
 )
 from dagster._core.events import DagsterEventType
-from dagster._serdes import unpack_value
+from dagster._serdes import unpack
 from dagster._seven import json
 from dagster._utils.error import SerializableErrorInfo
 from dagster_graphql.version import __version__ as dagster_graphql_version
@@ -191,7 +191,7 @@ def test_graphql_error(test_client: TestClient):
     assert response.status_code == 500, response.text
     error = response.json()["errors"][0]
     serdes_err = error["extensions"]["errorInfo"]
-    original_err = unpack_value(serdes_err)
+    original_err = unpack(serdes_err)
     assert isinstance(original_err, SerializableErrorInfo)
 
 

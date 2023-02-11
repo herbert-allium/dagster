@@ -482,8 +482,8 @@ from dagster._loggers import (
     json_console_logger as json_console_logger,
 )
 from dagster._serdes.serdes import (
-    deserialize_value as deserialize_value,
-    serialize_value as serialize_value,
+    deserialize as deserialize,
+    serialize as serialize,
 )
 from dagster._utils import file_relative_path as file_relative_path
 from dagster._utils.alert import (

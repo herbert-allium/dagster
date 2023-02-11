@@ -24,7 +24,7 @@ from dagster._core.execution.context.compute import OpExecutionContext
 from dagster._core.execution.context.input import build_input_context
 from dagster._core.execution.context.system import StepExecutionContext
 from dagster._core.execution.plan.outputs import StepOutputHandle
-from dagster._serdes import pack_value
+from dagster._serdes import pack
 from dagster._seven import get_system_temp_directory
 from dagster._utils import mkdir_p, safe_tempfile_path
 from dagster._utils.error import serializable_error_info_from_exc_info
@@ -148,9 +148,9 @@ def get_papermill_parameters(
 
     parameters["__dm_context"] = dm_context_dict
     parameters["__dm_executable_dict"] = dm_executable_dict
-    parameters["__dm_pipeline_run_dict"] = pack_value(step_context.dagster_run)
+    parameters["__dm_pipeline_run_dict"] = pack(step_context.dagster_run)
     parameters["__dm_node_handle_kwargs"] = dm_node_handle_kwargs
-    parameters["__dm_instance_ref_dict"] = pack_value(step_context.instance.get_ref())
+    parameters["__dm_instance_ref_dict"] = pack(step_context.instance.get_ref())
     parameters["__dm_step_key"] = dm_step_key
     parameters["__dm_input_names"] = list(inputs.keys())
 

@@ -27,7 +27,7 @@ from dagster._core.execution.plan.external_step import (
     external_instance_from_step_run_ref,
     run_step_from_ref,
 )
-from dagster._serdes import serialize_value
+from dagster._serdes import serialize
 
 # This won't be set in Databricks but is needed to be non-None for the
 # Dagster step to run.
@@ -119,7 +119,7 @@ def main(
 
             def put_events(events):
                 with gzip.open(events_filepath, "wb") as handle:
-                    pickle.dump(serialize_value(events), handle)
+                    pickle.dump(serialize(events), handle)
 
             # Set up a thread to handle writing events back to the plan process, so execution doesn't get
             # blocked on remote communication

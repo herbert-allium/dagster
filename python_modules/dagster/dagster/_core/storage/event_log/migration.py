@@ -1,8 +1,11 @@
+from typing import NamedTuple
+
 import sqlalchemy as db
 from tqdm import tqdm
 
+from dagster._core.assets import AssetDetails
 from dagster._core.events.log import EventLogEntry
-from dagster._serdes import deserialize_json_to_dagster_namedtuple
+from dagster._serdes.serdes import deserialize
 from dagster._utils import utc_datetime_from_timestamp
 
 SECONDARY_INDEX_ASSET_KEY = "asset_key_table"  # builds the asset key table from the event log
@@ -74,7 +77,7 @@ def migrate_asset_key_data(event_log_storage, print_fn=None):
 def migrate_asset_keys_index_columns(event_log_storage, print_fn=None):
     from dagster._core.definitions.events import AssetKey
     from dagster._core.storage.event_log.sql_event_log import SqlEventLogStorage
-    from dagster._serdes import serialize_dagster_namedtuple
+    from dagster._serdes import serialize
 
     from .schema import AssetKeyTable, SqlEventLogStorageTable
 
@@ -106,13 +109,11 @@ def migrate_asset_keys_index_columns(event_log_storage, print_fn=None):
             asset_key = AssetKey.from_db_string(asset_key_str)
 
             if asset_details_str:
-                asset_details = deserialize_json_to_dagster_namedtuple(asset_details_str)
+                asset_details = deserialize(asset_details_str, AssetDetails)
                 wipe_timestamp = asset_details.last_wipe_timestamp if asset_details else None
 
             if last_materialization_str:
-                event_or_materialization = deserialize_json_to_dagster_namedtuple(
-                    last_materialization_str
-                )
+                event_or_materialization = deserialize(last_materialization_str, NamedTuple)
 
                 if isinstance(event_or_materialization, EventLogEntry):
                     event = event_or_materialization
@@ -131,7 +132,7 @@ def migrate_asset_keys_index_columns(event_log_storage, print_fn=None):
                 )
                 row = conn.execute(materialization_query).fetchone()
                 if row:
-                    event = deserialize_json_to_dagster_namedtuple(row[0])
+                    event = deserialize(row[0], NamedTuple)
 
             if not event:
                 # this must be a wiped asset
@@ -152,7 +153,7 @@ def migrate_asset_keys_index_columns(event_log_storage, print_fn=None):
                 conn.execute(
                     AssetKeyTable.update()
                     .values(  # pylint: disable=no-value-for-parameter
-                        last_materialization=serialize_dagster_namedtuple(event),
+                        last_materialization=serialize(event),
                         last_materialization_timestamp=utc_datetime_from_timestamp(event.timestamp),
                         wipe_timestamp=utc_datetime_from_timestamp(wipe_timestamp)
                         if wipe_timestamp
@@ -178,7 +179,7 @@ def sql_asset_event_generator(conn, cursor=None, batch_size=1000):
 
         for record_id, event_json in fetched:
             cursor = record_id
-            event_record = deserialize_json_to_dagster_namedtuple(event_json)
+            event_record = deserialize(event_json, NamedTuple)
             if not isinstance(event_record, EventLogEntry):
                 continue
             yield (record_id, event_record)

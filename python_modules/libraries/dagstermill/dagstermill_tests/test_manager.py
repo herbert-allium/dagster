@@ -17,7 +17,7 @@ from dagster._core.definitions.reconstruct import ReconstructablePipeline
 from dagster._core.storage.pipeline_run import DagsterRun, DagsterRunStatus
 from dagster._core.test_utils import instance_for_test
 from dagster._core.utils import make_new_run_id
-from dagster._serdes import pack_value
+from dagster._serdes import pack
 from dagster._utils import safe_tempfile_path
 from dagstermill import DagstermillError
 from dagstermill.manager import Manager
@@ -43,7 +43,7 @@ def in_job_manager(
                 "dagstermill.examples.repository", "hello_world_job"
             ).to_dict()
 
-        pipeline_run_dict = pack_value(
+        pipeline_run_dict = pack(
             DagsterRun(
                 pipeline_name=pipeline_name,
                 run_id=run_id,
@@ -63,7 +63,7 @@ def in_job_manager(
                     "marshal_dir": marshal_dir,
                     "run_config": {},
                     "output_log_path": output_log_file_path,
-                    "instance_ref_dict": pack_value(instance.get_ref()),
+                    "instance_ref_dict": pack(instance.get_ref()),
                     "step_key": step_key,
                 }
 

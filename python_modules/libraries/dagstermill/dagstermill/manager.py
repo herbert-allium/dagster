@@ -39,7 +39,7 @@ from dagster._core.system_config.objects import ResolvedRunConfig, ResourceConfi
 from dagster._core.utils import make_new_run_id
 from dagster._legacy import Materialization, ModeDefinition, PipelineDefinition
 from dagster._loggers import colored_console_logger
-from dagster._serdes import unpack_value
+from dagster._serdes import unpack
 from dagster._utils import EventGenerationManager
 from dagster._utils.backcompat import deprecation_warning
 
@@ -141,14 +141,14 @@ class Manager:
         pipeline_def = pipeline.get_definition()
 
         try:
-            instance_ref = cast(InstanceRef, unpack_value(instance_ref_dict))
+            instance_ref = unpack(instance_ref_dict, InstanceRef)
             instance = DagsterInstance.from_ref(instance_ref)
         except Exception as err:
             raise DagstermillError(
                 "Error when attempting to resolve DagsterInstance from serialized InstanceRef"
             ) from err
 
-        pipeline_run = cast(DagsterRun, unpack_value(pipeline_run_dict))
+        dagster_run = unpack(pipeline_run_dict, DagsterRun)
 
         node_handle = NodeHandle.from_dict(node_handle_kwargs)
         op = pipeline_def.get_solid(node_handle)
@@ -160,20 +160,20 @@ class Manager:
         self.pipeline = pipeline
 
         resolved_run_config = ResolvedRunConfig.build(
-            pipeline_def, run_config, mode=pipeline_run.mode
+            pipeline_def, run_config, mode=dagster_run.mode
         )
 
         execution_plan = ExecutionPlan.build(
             self.pipeline,
             resolved_run_config,
-            step_keys_to_execute=pipeline_run.step_keys_to_execute,
+            step_keys_to_execute=dagster_run.step_keys_to_execute,
         )
 
         with scoped_pipeline_context(
             execution_plan,
             pipeline,
             run_config,
-            pipeline_run,
+            dagster_run,
             instance,
             scoped_resources_builder_cm=self._setup_resources,
             # Set this flag even though we're not in test for clearer error reporting

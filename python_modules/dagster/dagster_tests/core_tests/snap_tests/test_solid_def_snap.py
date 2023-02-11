@@ -1,6 +1,7 @@
 from dagster import In, Out, op
-from dagster._core.snap.solid import build_core_solid_def_snap
-from dagster._serdes import deserialize_json_to_dagster_namedtuple, serialize_dagster_namedtuple
+from dagster._core.snap.solid import SolidDefSnap, build_core_solid_def_snap
+from dagster._serdes import serialize
+from dagster._serdes.serdes import deserialize
 
 
 def test_basic_solid_definition():
@@ -11,10 +12,7 @@ def test_basic_solid_definition():
     solid_snap = build_core_solid_def_snap(noop_op)
 
     assert solid_snap
-    assert (
-        deserialize_json_to_dagster_namedtuple(serialize_dagster_namedtuple(solid_snap))
-        == solid_snap
-    )
+    assert deserialize(serialize(solid_snap), SolidDefSnap) == solid_snap
 
 
 def test_solid_definition_kitchen_sink():
@@ -74,9 +72,4 @@ def test_solid_definition_kitchen_sink():
     assert kitchen_sink_solid_snap.tags == {"a_tag": "yup"}
     assert kitchen_sink_op.positional_inputs == ["arg_two", "arg_one"]
 
-    assert (
-        deserialize_json_to_dagster_namedtuple(
-            serialize_dagster_namedtuple(kitchen_sink_solid_snap)
-        )
-        == kitchen_sink_solid_snap
-    )
+    assert deserialize(serialize(kitchen_sink_solid_snap), SolidDefSnap) == kitchen_sink_solid_snap

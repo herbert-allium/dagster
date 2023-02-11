@@ -19,7 +19,7 @@ from dagster._core.execution.plan.external_step import (
     PICKLED_STEP_RUN_REF_FILE_NAME,
     step_context_to_step_run_ref,
 )
-from dagster._serdes import deserialize_value
+from dagster._serdes import deserialize
 
 from dagster_aws.emr import EmrError, EmrJobRunner, emr_step_main
 from dagster_aws.emr.configs_spark import spark_config as get_spark_config
@@ -383,7 +383,7 @@ class EmrPySparkStepLauncher(StepLauncher):
 
         try:
             events_data = events_s3_obj.get()["Body"].read()
-            return deserialize_value(pickle.loads(events_data))
+            return deserialize(pickle.loads(events_data))
         except ClientError as ex:
             # The file might not be there yet, which is fine
             if ex.response["Error"]["Code"] == "NoSuchKey":
