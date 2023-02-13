@@ -5,5 +5,5 @@ hello_world_notebook_op = define_dagstermill_op("hello_world_notebook_op", "hell
 
 
 @job
-def hello_world_notebook_pipeline():
+def hello_world_notebook_job():
     hello_world_notebook_op()
