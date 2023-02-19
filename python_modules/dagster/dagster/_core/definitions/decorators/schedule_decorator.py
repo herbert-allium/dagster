@@ -28,7 +28,6 @@ from dagster._core.errors import (
     user_code_error_boundary,
 )
 from dagster._utils import ensure_gen
-from dagster._utils.backcompat import canonicalize_backcompat_args
 from dagster._utils.partitions import (
     DEFAULT_DATE_FORMAT,
     DEFAULT_HOURLY_FORMAT_WITH_TIMEZONE,
@@ -201,7 +200,7 @@ def schedule(
 
 
 def monthly_schedule(
-    job_name: Optional[str] = None,
+    job_name: Optional[str],
     *,
     start_date: datetime.datetime,
     name: Optional[str] = None,
@@ -217,7 +216,6 @@ def monthly_schedule(
     partition_months_offset: Optional[int] = 1,
     description: Optional[str] = None,
     default_status: DefaultScheduleStatus = DefaultScheduleStatus.STOPPED,
-    pipeline_name: Optional[str] = None,
 ) -> Callable[[Callable[[datetime.datetime], Mapping[str, Any]]], PartitionScheduleDefinition]:
     """Create a partitioned schedule that runs monthly.
 
@@ -262,10 +260,6 @@ def monthly_schedule(
         default_status (DefaultScheduleStatus): Whether the schedule starts as running or not. The default
             status can be overridden from Dagit or via the GraphQL API.
     """
-    job_name = check.not_none(
-        canonicalize_backcompat_args(job_name, "job_name", pipeline_name, "pipeline_name", "1.2.0")
-    )
-
     check.opt_str_param(name, "name")
     check.inst_param(start_date, "start_date", datetime.datetime)
     check.opt_inst_param(end_date, "end_date", datetime.datetime)
@@ -368,7 +362,7 @@ def my_schedule_definition(_):
 
 
 def weekly_schedule(
-    job_name: Optional[str] = None,
+    job_name: Optional[str],
     *,
     start_date: datetime.datetime,
     name: Optional[str] = None,
@@ -384,7 +378,6 @@ def weekly_schedule(
     partition_weeks_offset: Optional[int] = 1,
     description: Optional[str] = None,
     default_status: DefaultScheduleStatus = DefaultScheduleStatus.STOPPED,
-    pipeline_name: Optional[str] = None,
 ) -> Callable[[Callable[[datetime.datetime], Mapping[str, Any]]], PartitionScheduleDefinition]:
     """Create a partitioned schedule that runs daily.
 
@@ -429,10 +422,6 @@ def weekly_schedule(
         default_status (DefaultScheduleStatus): Whether the schedule starts as running or not. The default
             status can be overridden from Dagit or via the GraphQL API.
     """
-    job_name = check.not_none(
-        canonicalize_backcompat_args(job_name, "job_name", pipeline_name, "pipeline_name", "1.2.0")
-    )
-
     check.opt_str_param(name, "name")
     check.inst_param(start_date, "start_date", datetime.datetime)
     check.opt_inst_param(end_date, "end_date", datetime.datetime)
@@ -530,7 +519,7 @@ def my_schedule_definition(_):
 
 
 def daily_schedule(
-    job_name: Optional[str] = None,
+    job_name: Optional[str],
     *,
     start_date: datetime.datetime,
     name: Optional[str] = None,
@@ -545,7 +534,6 @@ def daily_schedule(
     partition_days_offset: Optional[int] = 1,
     description: Optional[str] = None,
     default_status: DefaultScheduleStatus = DefaultScheduleStatus.STOPPED,
-    pipeline_name: Optional[str] = None,
 ) -> Callable[[Callable[[datetime.datetime], Mapping[str, Any]]], PartitionScheduleDefinition]:
     """Create a partitioned schedule that runs daily.
 
@@ -588,10 +576,6 @@ def daily_schedule(
         default_status (DefaultScheduleStatus): Whether the schedule starts as running or not. The default
             status can be overridden from Dagit or via the GraphQL API.
     """
-    job_name = check.not_none(
-        canonicalize_backcompat_args(job_name, "job_name", pipeline_name, "pipeline_name", "1.2.0")
-    )
-
     check.opt_str_param(job_name, "job_name")
     check.inst_param(start_date, "start_date", datetime.datetime)
     check.opt_str_param(name, "name")
@@ -679,7 +663,7 @@ def my_schedule_definition(_):
 
 
 def hourly_schedule(
-    job_name: Optional[str] = None,
+    job_name: Optional[str],
     *,
     start_date: datetime.datetime,
     name: Optional[str] = None,
@@ -694,7 +678,6 @@ def hourly_schedule(
     partition_hours_offset: Optional[int] = 1,
     description: Optional[str] = None,
     default_status: DefaultScheduleStatus = DefaultScheduleStatus.STOPPED,
-    pipeline_name: Optional[str] = None,
 ) -> Callable[[Callable[[datetime.datetime], Mapping[str, Any]]], PartitionScheduleDefinition]:
     """Create a partitioned schedule that runs hourly.
 
@@ -739,10 +722,6 @@ def hourly_schedule(
         default_status (DefaultScheduleStatus): Whether the schedule starts as running or not. The default
             status can be overridden from Dagit or via the GraphQL API.
     """
-    job_name = check.not_none(
-        canonicalize_backcompat_args(job_name, "job_name", pipeline_name, "pipeline_name", "1.2.0")
-    )
-
     check.opt_str_param(name, "name")
     check.inst_param(start_date, "start_date", datetime.datetime)
     check.opt_inst_param(end_date, "end_date", datetime.datetime)
