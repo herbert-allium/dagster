@@ -2144,8 +2144,8 @@ export type PartitionBackfill = {
   fromFailure: Scalars['Boolean'];
   isValidSerialization: Scalars['Boolean'];
   numCancelable: Scalars['Int'];
-  numPartitions: Scalars['Int'];
-  partitionNames: Array<Scalars['String']>;
+  numPartitions: Maybe<Scalars['Int']>;
+  partitionNames: Maybe<Array<Scalars['String']>>;
   partitionSet: Maybe<PartitionSet>;
   partitionSetName: Maybe<Scalars['String']>;
   partitionStatusCounts: Array<PartitionStatusCounts>;
