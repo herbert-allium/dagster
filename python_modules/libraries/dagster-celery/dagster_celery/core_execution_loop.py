@@ -11,6 +11,8 @@ from dagster._core.storage.tags import PRIORITY_TAG
 from dagster._serdes.serdes import deserialize
 from dagster._utils.error import serializable_error_info_from_exc_info
 
+from dagster_celery.executor import CeleryExecutor
+
 from .defaults import task_default_priority, task_default_queue
 from .make_app import make_app
 from .tags import (
@@ -31,6 +33,7 @@ def core_celery_execution_loop(
     check.callable_param(step_execution_fn, "step_execution_fn")
 
     executor = pipeline_context.executor
+    assert isinstance(executor, CeleryExecutor)
 
     # If there are no step keys to execute, then any io managers will not be used.
     if len(execution_plan.step_keys_to_execute) > 0:

@@ -581,7 +581,7 @@ class SqlEventLogStorage(EventLogStorage):
 
         try:
             records = [deserialize(json_str, EventLogEntry) for (json_str,) in results]
-            return build_run_step_stats_from_events(run_id, records)  # type: ignore
+            return build_run_step_stats_from_events(run_id, records)
         except (seven.JSONDecodeError, DeserializationError) as err:
             raise DagsterEventLogInvalidForRun(run_id=run_id) from err
 

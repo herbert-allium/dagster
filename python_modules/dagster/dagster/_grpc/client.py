@@ -450,7 +450,7 @@ class DagsterGrpcClient:
     def start_run(self, execute_run_args: ExecuteExternalPipelineArgs):
         check.inst_param(execute_run_args, "execute_run_args", ExecuteExternalPipelineArgs)
 
-        with DagsterInstance.from_ref(execute_run_args.instance_ref) as instance:
+        with DagsterInstance.from_ref(execute_run_args.instance_ref) as instance:  # type: ignore  # (possible none)
             try:
                 res = self._query(
                     "StartRun",

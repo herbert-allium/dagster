@@ -24,7 +24,7 @@ def create_worker_cli_group():
     return group
 
 
-def get_config_value_from_yaml(yaml_path: str) -> Mapping[str, Any]:
+def get_config_value_from_yaml(yaml_path: Optional[str]) -> Mapping[str, Any]:
     if yaml_path is None:
         return {}
     parsed_yaml = load_yaml_from_path(yaml_path) or {}
@@ -59,7 +59,7 @@ def get_validated_config(config_yaml: Optional[str] = None) -> Any:
             config.errors,
             config_value,
         )
-    return post_process_config(config_type, config_value).value
+    return post_process_config(config_type, config_value).value  # type: ignore  # (possible none)
 
 
 def get_config_dir(config_yaml=None):
