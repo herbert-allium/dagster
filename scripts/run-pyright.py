@@ -17,7 +17,15 @@ from typing_extensions import Final, Literal, NotRequired, TypedDict
 
 parser = argparse.ArgumentParser(
     prog="run-pyright",
-    description="Run pyright for every specified pyright environment and print the merged results.",
+    description=(
+        "Run pyright for every specified pyright environment and print the merged results.\n\nBy"
+        " default, the venv for each pyright environment is built using `requirements-pinned.txt`."
+        " This speeds up venv construction on a development machine and in CI. Occasionally, these"
+        " pinned requirements will need to be updated. To do this, pass `--update-pins`. This will"
+        " cause the venv to be rebuilt with the looser requirements specified in"
+        " `requirements.txt`, and `requirements-pinned.txt` updated with the resulting dependency"
+        " list."
+    ),
 )
 
 parser.add_argument(
@@ -72,6 +80,19 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--update-pins",
+    action="store_true",
+    default=False,
+    help=(
+        "Update `requirements-pinned.txt` for selected environments (implies `--rebuild`). The"
+        " virtual env for the selected environment will be rebuilt using the abstract requirements"
+        " specified in `requirements.txt`. After the environment is built, the full dependency list"
+        " will be extracted with `pip freeze` and written to `requirements-pinned.txt` (this is"
+        " what is used in CI and for building the default venv)."
+    ),
+)
+
+parser.add_argument(
     "paths",
     type=str,
     nargs="*",
@@ -89,6 +110,7 @@ class Params(TypedDict):
     targets: Sequence[str]
     json: bool
     rebuild: bool
+    update_pins: bool
 
 
 class Position(TypedDict):
@@ -141,10 +163,12 @@ class EnvPathSpec(TypedDict):
 
 PYRIGHT_ENV_ROOT: Final = "pyright"
 
+DEFAULT_REQUIREMENTS_FILE: Final = "requirements.txt"
+
 # Help reduce build errors
 EXTRA_PIP_INSTALL_ARGS: Final = [
     # find-links for M1 lookup of grpcio wheels
-    "--find-links=https://github.com/dagster-io/build-grpcio/wiki/Wheels"
+    "--find-links=https://github.com/dagster-io/build-grpcio/wiki/Wheels",
 ]
 
 
@@ -191,6 +215,7 @@ def get_params(args: argparse.Namespace) -> Params:
     return Params(
         mode=mode,
         targets=targets,
+        update_pins=args.update_pins,
         json=args.json,
         rebuild=args.rebuild,
         unannotated=args.unannotated,
@@ -234,15 +259,21 @@ def map_paths_to_envs(paths: Sequence[str]) -> Mapping[str, Sequence[str]]:
     return env_path_map
 
 
-def normalize_env(env: str, rebuild: bool) -> None:
+def normalize_env(env: str, rebuild: bool, update_pins: bool) -> None:
     venv_path = os.path.join(get_env_path(env), ".venv")
-    if rebuild and os.path.exists(venv_path):
+    if (rebuild or update_pins) and os.path.exists(venv_path):
         print(f"Removing existing virtualenv for pyright environment {env}...")
         subprocess.run(f"rm -rf {venv_path}", shell=True, check=True)
     if not os.path.exists(venv_path):
         print(f"Creating virtualenv for pyright environment {env}...")
-        requirements_path = f"requirements-{env}.txt"
-        cmd = " && ".join(
+        if update_pins:
+            src_requirements_path = get_env_path(env, "requirements.txt")
+            extra_pip_install_args = EXTRA_PIP_INSTALL_ARGS
+        else:
+            src_requirements_path = get_env_path(env, "requirements-pinned.txt")
+            extra_pip_install_args = [*EXTRA_PIP_INSTALL_ARGS, "--no-deps"]
+        dest_requirements_path = f"requirements-{env}.txt"
+        build_venv_cmd = " && ".join(
             [
                 f"python -m venv {venv_path}",
                 f"{venv_path}/bin/pip install -U pip setuptools wheel",
@@ -251,28 +282,53 @@ def normalize_env(env: str, rebuild: bool) -> None:
                         f"{venv_path}/bin/pip",
                         "install",
                         "-r",
-                        requirements_path,
-                        *EXTRA_PIP_INSTALL_ARGS,
+                        dest_requirements_path,
+                        *extra_pip_install_args,
                     ]
                 ),
             ]
         )
         try:
-            shutil.copyfile(get_env_path(env, "requirements.txt"), requirements_path)
-            subprocess.run(cmd, shell=True, check=True)
+            print(f"Copying {src_requirements_path} to {dest_requirements_path}....")
+            shutil.copyfile(src_requirements_path, dest_requirements_path)
+            subprocess.run(build_venv_cmd, shell=True, check=True)
         except subprocess.CalledProcessError as e:
             subprocess.run(f"rm -rf {venv_path}", shell=True, check=True)
             print(f"Partially built virtualenv for pyright environment {env} deleted.")
             raise e
         finally:
-            os.remove(requirements_path)
+            os.remove(dest_requirements_path)
+
+        if update_pins:
+            update_pinned_requirements(env)
+
     return None
 
 
+def update_pinned_requirements(env: str) -> None:
+    print(f"Updating pinned requirements for pyright environment {env}...")
+    venv_path = os.path.join(get_env_path(env), ".venv")
+    raw_dep_list = subprocess.run(
+        f"{venv_path}/bin/pip freeze", capture_output=True, shell=True, text=True, check=True
+    ).stdout
+    is_internal = not os.path.exists("python_modules/dagster")
+    oss_root = "${DAGSTER_GIT_REPO_DIR}/" if is_internal else ""
+    dep_list = re.sub(
+        r"-e git.*?dagster-io/dagster.*?\&subdirectory=(.+)", f"-e {oss_root}\\1", raw_dep_list
+    )
+    dep_list = re.sub(r"-e git.*?dagster-io/internal.*?\&subdirectory=(.+)", "-e \\1", dep_list)
+    with open(get_env_path(env, "requirements-pinned.txt"), "w") as f:
+        f.write(dep_list)
+
+
 def run_pyright(
-    env: str, paths: Optional[Sequence[str]], rebuild: bool, unannotated: bool
+    env: str,
+    paths: Optional[Sequence[str]],
+    rebuild: bool,
+    unannotated: bool,
+    pinned_deps: bool,
 ) -> RunResult:
-    normalize_env(env, rebuild)
+    normalize_env(env, rebuild, pinned_deps)
     with temp_pyright_config_file(env, unannotated) as config_path:
         base_pyright_cmd = " ".join(
             [
@@ -402,6 +458,7 @@ if __name__ == "__main__":
             paths=env_path_map[env],
             rebuild=params["rebuild"],
             unannotated=params["unannotated"],
+            pinned_deps=params["update_pins"],
         )
         for env in env_path_map
     ]
