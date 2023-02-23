@@ -139,11 +139,11 @@ def get_input_event_pointer_tag(input_key: "AssetKey") -> str:
 # ########################
 
 
-def compute_logical_version(
+def compute_logical_data_version(
     code_version: Union[str, UnknownValue],
     input_data_versions: Mapping["AssetKey", DataVersion],
 ) -> DataVersion:
-    """Compute a version for a value as a hash of input data versions and code version.
+    """Compute a data version for a value as a hash of input data versions and code version.
 
     Args:
         code_version (str): The code version of the computation.
@@ -419,7 +419,7 @@ class CachingStaleStatusResolver:
 
     def _compute_projected_new_materialization_data_version(self, key: AssetKey) -> DataVersion:
         dep_keys = self.asset_graph.get_parents(key)
-        return compute_logical_version(
+        return compute_logical_data_version(
             self.asset_graph.get_code_version(key) or UNKNOWN_VALUE,
             {dep_key: self._get_projected_data_version(key=dep_key) for dep_key in dep_keys},
         )
