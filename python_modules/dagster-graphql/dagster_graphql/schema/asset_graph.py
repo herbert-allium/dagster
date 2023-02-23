@@ -194,7 +194,7 @@ class GrapheneAssetNode(graphene.ObjectType):
     )
     computeKind = graphene.String()
     configField = graphene.Field(GrapheneConfigTypeField)
-    currentLogicalVersion = graphene.String()
+    currentDataVersion = graphene.String()
     dependedBy = non_null_list(GrapheneAssetDependency)
     dependedByKeys = non_null_list(GrapheneAssetKey)
     dependencies = non_null_list(GrapheneAssetDependency)
@@ -228,7 +228,7 @@ class GrapheneAssetNode(graphene.ObjectType):
         startIdx=graphene.Int(),
         endIdx=graphene.Int(),
     )
-    projectedLogicalVersion = graphene.String()
+    projectedDataVersion = graphene.String()
     repository = graphene.NonNull(lambda: external.GrapheneRepository)
     required_resources = non_null_list(GrapheneResourceRequirement)
     staleStatus = graphene.Field(GrapheneAssetStaleStatus)
@@ -305,7 +305,7 @@ class GrapheneAssetNode(graphene.ObjectType):
     def stale_status_loader(self) -> StaleStatusLoader:
         loader = check.not_none(
             self._stale_status_loader,
-            "stale_status_loader must exist in order to logical versioning information",
+            "stale_status_loader must exist in order to access data versioning information",
         )
         return loader
 
@@ -572,13 +572,13 @@ class GrapheneAssetNode(graphene.ObjectType):
             for cause in causes
         ]
 
-    def resolve_currentLogicalVersion(self, graphene_info: ResolveInfo) -> Optional[str]:
+    def resolve_currentDataVersion(self, graphene_info: ResolveInfo) -> Optional[str]:
         version = self.stale_status_loader.get_current_data_version(
             self._external_asset_node.asset_key
         )
         return None if version == NULL_DATA_VERSION else version.value
 
-    def resolve_projectedLogicalVersion(self, _graphene_info: ResolveInfo) -> Optional[str]:
+    def resolve_projectedDataVersion(self, _graphene_info: ResolveInfo) -> Optional[str]:
         if (
             self.external_asset_node.is_source
             or self.external_asset_node.partitions_def_data is not None
