@@ -6,7 +6,7 @@ from dagster import (
     _check as check,
 )
 from dagster._core.definitions.data_version import (
-    NULL_LOGICAL_VERSION,
+    NULL_DATA_VERSION,
     StaleStatus,
 )
 from dagster._core.definitions.external_asset_graph import ExternalAssetGraph
@@ -573,10 +573,10 @@ class GrapheneAssetNode(graphene.ObjectType):
         ]
 
     def resolve_currentLogicalVersion(self, graphene_info: ResolveInfo) -> Optional[str]:
-        version = self.stale_status_loader.get_current_logical_version(
+        version = self.stale_status_loader.get_current_data_version(
             self._external_asset_node.asset_key
         )
-        return None if version == NULL_LOGICAL_VERSION else version.value
+        return None if version == NULL_DATA_VERSION else version.value
 
     def resolve_projectedLogicalVersion(self, _graphene_info: ResolveInfo) -> Optional[str]:
         if (
@@ -585,7 +585,7 @@ class GrapheneAssetNode(graphene.ObjectType):
         ):
             return None
         else:
-            version = self.stale_status_loader.get_projected_logical_version(
+            version = self.stale_status_loader.get_projected_data_version(
                 self.external_asset_node.asset_key
             )
             return version.value

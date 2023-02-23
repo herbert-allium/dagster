@@ -55,9 +55,9 @@ class DataVersion(
         )
 
 
-DEFAULT_LOGICAL_VERSION: Final[DataVersion] = DataVersion("INITIAL")
-NULL_LOGICAL_VERSION: Final[DataVersion] = DataVersion("NULL")
-UNKNOWN_LOGICAL_VERSION: Final[DataVersion] = DataVersion("UNKNOWN")
+DEFAULT_DATA_VERSION: Final[DataVersion] = DataVersion("INITIAL")
+NULL_DATA_VERSION: Final[DataVersion] = DataVersion("NULL")
+UNKNOWN_DATA_VERSION: Final[DataVersion] = DataVersion("UNKNOWN")
 
 
 class DataProvenance(
@@ -99,14 +99,14 @@ class DataProvenance(
     def from_tags(tags: Mapping[str, str]) -> Optional[DataProvenance]:
         from dagster._core.definitions.events import AssetKey
 
-        code_version = tags.get(CODE_VERSION_TAG_KEY)
+        code_version = tags.get(CODE_VERSION_TAG)
         if code_version is None:
             return None
-        start_index = len(INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX) + 1
+        start_index = len(INPUT_DATA_VERSION_TAG_PREFIX) + 1
         input_data_versions = {
             AssetKey.from_user_string(k[start_index:]): DataVersion(tags[k])
             for k, v in tags.items()
-            if k.startswith(INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX)
+            if k.startswith(INPUT_DATA_VERSION_TAG_PREFIX)
         }
         return DataProvenance(code_version, input_data_versions)
 
@@ -120,18 +120,18 @@ class DataProvenance(
 # ##### TAG KEYS
 # ########################
 
-LOGICAL_VERSION_TAG_KEY: Final[str] = "dagster/logical_version"
-CODE_VERSION_TAG_KEY: Final[str] = "dagster/code_version"
-INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX: Final[str] = "dagster/input_logical_version"
-INPUT_EVENT_POINTER_TAG_KEY_PREFIX: Final[str] = "dagster/input_event_pointer"
+DATA_VERSION_TAG: Final[str] = "dagster/logical_version"
+CODE_VERSION_TAG: Final[str] = "dagster/code_version"
+INPUT_DATA_VERSION_TAG_PREFIX: Final[str] = "dagster/input_logical_version"
+INPUT_EVENT_POINTER_TAG_PREFIX: Final[str] = "dagster/input_event_pointer"
 
 
-def get_input_logical_version_tag_key(input_key: "AssetKey") -> str:
-    return f"{INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX}/{input_key.to_user_string()}"
+def get_input_data_version_tag(input_key: "AssetKey") -> str:
+    return f"{INPUT_DATA_VERSION_TAG_PREFIX}/{input_key.to_user_string()}"
 
 
-def get_input_event_pointer_tag_key(input_key: "AssetKey") -> str:
-    return f"{INPUT_EVENT_POINTER_TAG_KEY_PREFIX}/{input_key.to_user_string()}"
+def get_input_event_pointer_tag(input_key: "AssetKey") -> str:
+    return f"{INPUT_EVENT_POINTER_TAG_PREFIX}/{input_key.to_user_string()}"
 
 
 # ########################
@@ -143,14 +143,14 @@ def compute_logical_version(
     code_version: Union[str, UnknownValue],
     input_data_versions: Mapping["AssetKey", DataVersion],
 ) -> DataVersion:
-    """Compute a logical version from inputs.
+    """Compute a version for a value as a hash of input data versions and code version.
 
     Args:
-        code_version (DataVersion): The code version of the computation.
-        input_data_versions (Mapping[AssetKey, DataVersion]): The logical versions of the inputs.
+        code_version (str): The code version of the computation.
+        input_data_versions (Mapping[AssetKey, DataVersion]): The data versions of the inputs.
 
     Returns:
-        LogicalVersion: The computed logical version.
+        DataVersion: The computed logical version as a `DataVersion`.
     """
     from dagster._core.definitions.events import AssetKey
 
@@ -161,9 +161,9 @@ def compute_logical_version(
 
     if (
         isinstance(code_version, UnknownValue)
-        or UNKNOWN_LOGICAL_VERSION in input_data_versions.values()
+        or UNKNOWN_DATA_VERSION in input_data_versions.values()
     ):
-        return UNKNOWN_LOGICAL_VERSION
+        return UNKNOWN_DATA_VERSION
 
     ordered_input_versions = [
         input_data_versions[k] for k in sorted(input_data_versions.keys(), key=str)
@@ -175,16 +175,16 @@ def compute_logical_version(
     return DataVersion(hash_sig.hexdigest())
 
 
-def extract_logical_version_from_entry(
+def extract_data_version_from_entry(
     entry: EventLogEntry,
 ) -> Optional[DataVersion]:
     event_data = _extract_event_data_from_entry(entry)
     tags = event_data.tags or {}
-    value = tags.get(LOGICAL_VERSION_TAG_KEY)
+    value = tags.get(DATA_VERSION_TAG)
     return None if value is None else DataVersion(value)
 
 
-def extract_logical_version_provenance_from_entry(
+def extract_data_provenance_from_entry(
     entry: EventLogEntry,
 ) -> Optional[DataProvenance]:
     event_data = _extract_event_data_from_entry(entry)
@@ -230,7 +230,7 @@ class StaleStatusCause(NamedTuple):
 
 class CachingStaleStatusResolver:
     """
-    Used to resolve logical version information. Avoids redundant database
+    Used to resolve data version information. Avoids redundant database
     calls that would otherwise occur. Intended for use within the scope of a
     single "request" (e.g. GQL request, RunRequest resolution).
     """
@@ -260,11 +260,11 @@ class CachingStaleStatusResolver:
     def get_status_causes(self, key: AssetKey) -> Sequence[StaleStatusCause]:
         return self._get_status_causes(key=key)
 
-    def get_current_logical_version(self, key: AssetKey) -> DataVersion:
-        return self._get_current_logical_version(key=key)
+    def get_current_data_version(self, key: AssetKey) -> DataVersion:
+        return self._get_current_data_version(key=key)
 
-    def get_projected_logical_version(self, key: AssetKey) -> DataVersion:
-        return self._get_projected_logical_version(key=key)
+    def get_projected_data_version(self, key: AssetKey) -> DataVersion:
+        return self._get_projected_data_version(key=key)
 
     @cached_method
     def _get_status(self, key: AssetKey) -> StaleStatus:
@@ -274,9 +274,9 @@ class CachingStaleStatusResolver:
             causes = self._get_status_causes(key=key)
             return StaleStatus.FRESH if len(causes) == 0 else causes[0].status
 
-        current_version = self._get_current_logical_version(key=key)
-        projected_version = self._get_projected_logical_version(key=key)
-        if projected_version == UNKNOWN_LOGICAL_VERSION:
+        current_version = self._get_current_data_version(key=key)
+        projected_version = self._get_projected_data_version(key=key)
+        if projected_version == UNKNOWN_DATA_VERSION:
             return StaleStatus.UNKNOWN
         elif projected_version == current_version:  # always true for source assets
             return StaleStatus.FRESH
@@ -285,18 +285,18 @@ class CachingStaleStatusResolver:
 
     @cached_method
     def _get_status_causes(self, key: AssetKey) -> Sequence[StaleStatusCause]:
-        current_version = self._get_current_logical_version(key=key)
-        projected_version = self._get_projected_logical_version(key=key)
+        current_version = self._get_current_data_version(key=key)
+        projected_version = self._get_projected_data_version(key=key)
         if current_version == projected_version:
             return []
-        elif current_version == NULL_LOGICAL_VERSION:
+        elif current_version == NULL_DATA_VERSION:
             return [StaleStatusCause(StaleStatus.STALE, key, "never materialized")]
         else:
             return list(self._get_stale_status_causes_materialized(key))
 
     def _get_stale_status_causes_materialized(self, key: AssetKey) -> Iterator[StaleStatusCause]:
         code_version = self.asset_graph.get_code_version(key)
-        provenance = self._get_current_logical_version_provenance(key=key)
+        provenance = self._get_current_data_provenance(key=key)
         proj_dep_keys = self.asset_graph.get_parents(key)
 
         if provenance:
@@ -311,11 +311,11 @@ class CachingStaleStatusResolver:
                     yield StaleStatusCause(
                         StaleStatus.STALE, key, f"removed input: {dep_key.to_user_string()}"
                     )
-                elif prov_versions[dep_key] != self._get_current_logical_version(key=dep_key):
+                elif prov_versions[dep_key] != self._get_current_data_version(key=dep_key):
                     yield StaleStatusCause(
                         StaleStatus.STALE, key, f"updated input: {dep_key.to_user_string()}"
                     )
-                elif prov_versions[dep_key] != self._get_projected_logical_version(key=dep_key):
+                elif prov_versions[dep_key] != self._get_projected_data_version(key=dep_key):
                     yield StaleStatusCause(
                         StaleStatus.STALE, key, f"stale input: {dep_key.to_user_string()}"
                     )
@@ -338,51 +338,49 @@ class CachingStaleStatusResolver:
         return self._asset_graph
 
     @cached_method
-    def _get_current_logical_version(self, *, key: AssetKey) -> DataVersion:
+    def _get_current_data_version(self, *, key: AssetKey) -> DataVersion:
         is_source = self.asset_graph.is_source(key)
         event = self._instance.get_latest_logical_version_record(
             key,
             is_source,
         )
         if event is None and is_source:
-            return DEFAULT_LOGICAL_VERSION
+            return DEFAULT_DATA_VERSION
         elif event is None:
-            return NULL_LOGICAL_VERSION
+            return NULL_DATA_VERSION
         else:
-            logical_version = extract_logical_version_from_entry(event.event_log_entry)
-            return logical_version or DEFAULT_LOGICAL_VERSION
+            data_version = extract_data_version_from_entry(event.event_log_entry)
+            return data_version or DEFAULT_DATA_VERSION
 
     @cached_method
-    def _get_projected_logical_version(self, *, key: AssetKey) -> DataVersion:
+    def _get_projected_data_version(self, *, key: AssetKey) -> DataVersion:
         if self.asset_graph.get_partitions_def(key):
-            return UNKNOWN_LOGICAL_VERSION
+            return UNKNOWN_DATA_VERSION
         elif self.asset_graph.is_source(key):
             event = self._instance.get_latest_logical_version_record(key, True)
             if event:
                 version = (
-                    extract_logical_version_from_entry(event.event_log_entry)
-                    or DEFAULT_LOGICAL_VERSION
+                    extract_data_version_from_entry(event.event_log_entry) or DEFAULT_DATA_VERSION
                 )
             else:
-                version = DEFAULT_LOGICAL_VERSION
+                version = DEFAULT_DATA_VERSION
         elif self.asset_graph.get_code_version(key) is not None:
-            version = self._compute_projected_new_materialization_logical_version(key)
+            version = self._compute_projected_new_materialization_data_version(key)
         else:
             materialization = self._get_latest_materialization_event(key=key)
             if materialization is None:  # never been materialized
-                version = self._compute_projected_new_materialization_logical_version(key)
+                version = self._compute_projected_new_materialization_data_version(key)
             else:
-                current_logical_version = self._get_current_logical_version(key=key)
-                provenance = self._get_current_logical_version_provenance(key=key)
+                current_data_version = self._get_current_data_version(key=key)
+                provenance = self._get_current_data_provenance(key=key)
                 if (
-                    current_logical_version
-                    is None  # old materialization event before logical versions
+                    current_data_version is None  # old materialization event before data versions
                     or provenance is None  # should never happen
                     or self._is_provenance_stale(key, provenance)
                 ):
-                    version = self._compute_projected_new_materialization_logical_version(key)
+                    version = self._compute_projected_new_materialization_data_version(key)
                 else:
-                    version = current_logical_version
+                    version = current_data_version
         return version
 
     @cached_method
@@ -390,28 +388,28 @@ class CachingStaleStatusResolver:
         return self._instance.get_latest_materialization_event(key)
 
     @cached_method
-    def _get_current_logical_version_provenance(self, *, key: AssetKey) -> Optional[DataProvenance]:
+    def _get_current_data_provenance(self, *, key: AssetKey) -> Optional[DataProvenance]:
         materialization = self._get_latest_materialization_event(key=key)
         if materialization is None:
             return None
         else:
-            return extract_logical_version_provenance_from_entry(materialization)
+            return extract_data_provenance_from_entry(materialization)
 
-    # Returns true if the current logical version of at least one input asset differs from the
-    # recorded logical version for that asset in the provenance. This indicates that a new
-    # materialization with up-to-date data would produce a different logical verson.
+    # Returns true if the current data version of at least one input asset differs from the
+    # recorded data version for that asset in the provenance. This indicates that a new
+    # materialization with up-to-date data would produce a different data verson.
     def _is_provenance_stale(self, key: AssetKey, provenance: DataProvenance) -> bool:
         if self._has_updated_dependencies(key=key):
             return True
         else:
             for k, v in provenance.input_data_versions.items():
-                if self._get_projected_logical_version(key=k) != v:
+                if self._get_projected_data_version(key=k) != v:
                     return True
             return False
 
     @cached_method
     def _has_updated_dependencies(self, *, key: AssetKey) -> bool:
-        provenance = self._get_current_logical_version_provenance(key=key)
+        provenance = self._get_current_data_provenance(key=key)
         if provenance is None:
             return True
         else:
@@ -419,9 +417,9 @@ class CachingStaleStatusResolver:
             old_dep_keys = set(provenance.input_data_versions.keys())
             return curr_dep_keys != old_dep_keys
 
-    def _compute_projected_new_materialization_logical_version(self, key: AssetKey) -> DataVersion:
+    def _compute_projected_new_materialization_data_version(self, key: AssetKey) -> DataVersion:
         dep_keys = self.asset_graph.get_parents(key)
         return compute_logical_version(
             self.asset_graph.get_code_version(key) or UNKNOWN_VALUE,
-            {dep_key: self._get_projected_logical_version(key=dep_key) for dep_key in dep_keys},
+            {dep_key: self._get_projected_data_version(key=dep_key) for dep_key in dep_keys},
         )
