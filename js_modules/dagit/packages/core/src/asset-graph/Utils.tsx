@@ -134,8 +134,8 @@ export interface LiveDataForNode {
   freshnessPolicy: AssetNodeLiveFreshnessPolicyFragment | null;
   freshnessInfo: AssetNodeLiveFreshnessInfoFragment | null;
   lastObservation: AssetNodeLiveObservationFragment | null;
-  currentLogicalVersion: string | null;
-  projectedLogicalVersion: string | null;
+  currentDataVersion: string | null;
+  projectedDataVersion: string | null;
   partitionStats: {numMaterialized: number; numPartitions: number} | null;
 }
 
@@ -148,8 +148,8 @@ export const MISSING_LIVE_DATA: LiveDataForNode = {
   lastMaterialization: null,
   lastMaterializationRunStatus: null,
   lastObservation: null,
-  currentLogicalVersion: null,
-  projectedLogicalVersion: null,
+  currentDataVersion: null,
+  projectedDataVersion: null,
   partitionStats: null,
   stepKey: '',
 };
@@ -189,8 +189,8 @@ export const buildLiveDataForNode = (
 ): LiveDataForNode => {
   const lastMaterialization = assetNode.assetMaterializations[0] || null;
   const lastObservation = assetNode.assetObservations[0] || null;
-  const currentLogicalVersion = assetNode.currentLogicalVersion;
-  const projectedLogicalVersion = assetNode.projectedLogicalVersion;
+  const currentDataVersion = assetNode.currentDataVersion;
+  const projectedDataVersion = assetNode.projectedDataVersion;
   const latestRunForAsset = assetLatestInfo?.latestRun ? assetLatestInfo.latestRun : null;
 
   const runWhichFailedToMaterialize =
@@ -206,8 +206,8 @@ export const buildLiveDataForNode = (
         ? latestRunForAsset.status
         : null,
     lastObservation,
-    currentLogicalVersion,
-    projectedLogicalVersion,
+    currentDataVersion,
+    projectedDataVersion,
     stepKey: assetNode.opNames[0],
     freshnessInfo: assetNode.freshnessInfo,
     freshnessPolicy: assetNode.freshnessPolicy,
