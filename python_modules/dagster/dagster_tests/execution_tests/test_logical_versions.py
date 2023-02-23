@@ -91,7 +91,7 @@ def get_version_from_mat(mat: AssetMaterialization) -> str:
     return mat.tags[DATA_VERSION_TAG]
 
 
-def assert_logical_version(mat: AssetMaterialization, version: Union[str, DataVersion]) -> None:
+def assert_data_version(mat: AssetMaterialization, version: Union[str, DataVersion]) -> None:
     value = version.value if isinstance(version, DataVersion) else version
     assert mat.tags
     assert mat.tags[DATA_VERSION_TAG] == value
@@ -110,7 +110,7 @@ def assert_same_versions(
     assert mat1.tags[DATA_VERSION_TAG] is not None
     assert mat2.tags
     assert mat2.tags[CODE_VERSION_TAG] == code_version
-    assert mat2.tags[DATA_VERSION_TAG] == mat1.tags["dagster/logical_version"]
+    assert mat2.tags[DATA_VERSION_TAG] == mat1.tags[DATA_VERSION_TAG]
 
 
 def assert_different_versions(mat1: AssetMaterialization, mat2: AssetMaterialization) -> None:
@@ -118,22 +118,22 @@ def assert_different_versions(mat1: AssetMaterialization, mat2: AssetMaterializa
     assert mat1.tags[CODE_VERSION_TAG] is not None
     assert mat1.tags[DATA_VERSION_TAG] is not None
     assert mat2.tags
-    assert mat2.tags[DATA_VERSION_TAG] != mat1.tags["dagster/logical_version"]
+    assert mat2.tags[DATA_VERSION_TAG] != mat1.tags[DATA_VERSION_TAG]
 
 
 def assert_provenance_match(mat: AssetMaterialization, upstream_mat: AssetMaterialization) -> None:
-    mat_prov_lv = get_upstream_version_from_mat_provenance(mat, upstream_mat.asset_key)
-    upstream_mat_lv = get_version_from_mat(upstream_mat)
-    assert mat_prov_lv == upstream_mat_lv
+    mat_prov_dv = get_upstream_version_from_mat_provenance(mat, upstream_mat.asset_key)
+    upstream_mat_dv = get_version_from_mat(upstream_mat)
+    assert mat_prov_dv == upstream_mat_dv
 
 
 # Check that mat references upstream mat in its provenance
 def assert_provenance_no_match(
     mat: AssetMaterialization, upstream_mat: AssetMaterialization
 ) -> None:
-    mat_prov_lv = get_upstream_version_from_mat_provenance(mat, upstream_mat.asset_key)
-    upstream_mat_lv = get_version_from_mat(upstream_mat)
-    assert mat_prov_lv != upstream_mat_lv
+    mat_prov_dv = get_upstream_version_from_mat_provenance(mat, upstream_mat.asset_key)
+    upstream_mat_dv = get_version_from_mat(upstream_mat)
+    assert mat_prov_dv != upstream_mat_dv
 
 
 @overload
@@ -399,9 +399,9 @@ def test_multiple_code_versions():
     alpha_mat = mats[AssetKey("alpha")]
     beta_mat = mats[AssetKey("beta")]
 
-    assert_logical_version(alpha_mat, compute_logical_data_version("a", {}))
+    assert_data_version(alpha_mat, compute_logical_data_version("a", {}))
     assert_code_version(alpha_mat, "a")
-    assert_logical_version(beta_mat, compute_logical_data_version("b", {}))
+    assert_data_version(beta_mat, compute_logical_data_version("b", {}))
     assert_code_version(beta_mat, "b")
 
 
@@ -489,7 +489,7 @@ def test_stale_status() -> None:
         ]
 
 
-def test_set_logical_version_inside_op():
+def test_set_data_version_inside_op():
     instance = DagsterInstance.ephemeral()
 
     @asset
@@ -497,10 +497,10 @@ def test_set_logical_version_inside_op():
         return Output(1, data_version=DataVersion("foo"))
 
     mat = materialize_asset([asset1], asset1, instance)
-    assert_logical_version(mat, DataVersion("foo"))
+    assert_data_version(mat, DataVersion("foo"))
 
 
-def test_get_logical_version_provenance_inside_op():
+def test_get_data_provenance_inside_op():
     instance = DagsterInstance.ephemeral()
 
     @asset
@@ -516,7 +516,7 @@ def test_get_logical_version_provenance_inside_op():
         return Output(2)
 
     mats = materialize_assets([asset1, asset2], instance)
-    assert_logical_version(mats["asset1"], DataVersion("foo"))
+    assert_data_version(mats["asset1"], DataVersion("foo"))
     materialize_asset(
         [asset1, asset2],
         asset2,
