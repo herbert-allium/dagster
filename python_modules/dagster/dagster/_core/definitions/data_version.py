@@ -340,7 +340,7 @@ class CachingStaleStatusResolver:
     @cached_method
     def _get_current_data_version(self, *, key: AssetKey) -> DataVersion:
         is_source = self.asset_graph.is_source(key)
-        event = self._instance.get_latest_logical_version_record(
+        event = self._instance.get_latest_data_version_record(
             key,
             is_source,
         )
@@ -357,7 +357,7 @@ class CachingStaleStatusResolver:
         if self.asset_graph.get_partitions_def(key):
             return UNKNOWN_DATA_VERSION
         elif self.asset_graph.is_source(key):
-            event = self._instance.get_latest_logical_version_record(key, True)
+            event = self._instance.get_latest_data_version_record(key, True)
             if event:
                 version = (
                     extract_data_version_from_entry(event.event_log_entry) or DEFAULT_DATA_VERSION
