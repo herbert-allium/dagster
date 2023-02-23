@@ -494,7 +494,7 @@ def test_set_logical_version_inside_op():
 
     @asset
     def asset1():
-        return Output(1, logical_version=DataVersion("foo"))
+        return Output(1, data_version=DataVersion("foo"))
 
     mat = materialize_asset([asset1], asset1, instance)
     assert_logical_version(mat, DataVersion("foo"))
@@ -505,7 +505,7 @@ def test_get_logical_version_provenance_inside_op():
 
     @asset
     def asset1():
-        return Output(1, logical_version=DataVersion("foo"))
+        return Output(1, data_version=DataVersion("foo"))
 
     @asset(config_schema={"check_provenance": Field(bool, default_value=False)})
     def asset2(context: OpExecutionContext, asset1):
