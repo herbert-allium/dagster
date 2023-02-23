@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, Iterator, Mapping, NamedTuple, Optio
 from typing_extensions import Final
 
 from dagster import _check as check
+from dagster._annotations import deprecated
 from dagster._utils.cached_method import cached_method
 
 if TYPE_CHECKING:
@@ -64,7 +65,7 @@ class DataProvenance(
         "_DataProvenance",
         [
             ("code_version", str),
-            ("input_logical_versions", Mapping["AssetKey", DataVersion]),
+            ("input_data_versions", Mapping["AssetKey", DataVersion]),
         ],
     )
 ):
@@ -72,23 +73,23 @@ class DataProvenance(
 
     Args:
         code_version (str): The code version of the op that generated a materialization.
-        input_logical_versions (Mapping[AssetKey, DataVersion]): The logical versions of the
-            inputs used for the materialization.
+        input_data_versions (Mapping[AssetKey, DataVersion]): The data versions of the
+            inputs used to generate a materialization.
     """
 
     def __new__(
         cls,
         code_version: str,
-        input_logical_versions: Mapping["AssetKey", DataVersion],
+        input_data_versions: Mapping["AssetKey", DataVersion],
     ):
         from dagster._core.definitions.events import AssetKey
 
         return super(DataProvenance, cls).__new__(
             cls,
             code_version=check.str_param(code_version, "code_version"),
-            input_logical_versions=check.mapping_param(
-                input_logical_versions,
-                "input_logical_versions",
+            input_data_versions=check.mapping_param(
+                input_data_versions,
+                "input_data_versions",
                 key_type=AssetKey,
                 value_type=DataVersion,
             ),
@@ -102,12 +103,17 @@ class DataProvenance(
         if code_version is None:
             return None
         start_index = len(INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX) + 1
-        input_logical_versions = {
+        input_data_versions = {
             AssetKey.from_user_string(k[start_index:]): DataVersion(tags[k])
             for k, v in tags.items()
             if k.startswith(INPUT_LOGICAL_VERSION_TAG_KEY_PREFIX)
         }
-        return DataProvenance(code_version, input_logical_versions)
+        return DataProvenance(code_version, input_data_versions)
+
+    @property
+    @deprecated
+    def input_logical_versions(self) -> Mapping["AssetKey", DataVersion]:
+        return self.input_data_versions
 
 
 # ########################
@@ -135,13 +141,13 @@ def get_input_event_pointer_tag_key(input_key: "AssetKey") -> str:
 
 def compute_logical_version(
     code_version: Union[str, UnknownValue],
-    input_logical_versions: Mapping["AssetKey", DataVersion],
+    input_data_versions: Mapping["AssetKey", DataVersion],
 ) -> DataVersion:
     """Compute a logical version from inputs.
 
     Args:
-        code_version (str): The code version of the computation.
-        input_logical_versions (Mapping[AssetKey, DataVersion]): The logical versions of the inputs.
+        code_version (DataVersion): The code version of the computation.
+        input_data_versions (Mapping[AssetKey, DataVersion]): The logical versions of the inputs.
 
     Returns:
         LogicalVersion: The computed logical version.
@@ -150,17 +156,17 @@ def compute_logical_version(
 
     check.inst_param(code_version, "code_version", (str, UnknownValue))
     check.mapping_param(
-        input_logical_versions, "input_versions", key_type=AssetKey, value_type=DataVersion
+        input_data_versions, "input_versions", key_type=AssetKey, value_type=DataVersion
     )
 
     if (
         isinstance(code_version, UnknownValue)
-        or UNKNOWN_LOGICAL_VERSION in input_logical_versions.values()
+        or UNKNOWN_LOGICAL_VERSION in input_data_versions.values()
     ):
         return UNKNOWN_LOGICAL_VERSION
 
     ordered_input_versions = [
-        input_logical_versions[k] for k in sorted(input_logical_versions.keys(), key=str)
+        input_data_versions[k] for k in sorted(input_data_versions.keys(), key=str)
     ]
     all_inputs = (code_version, *(v.value for v in ordered_input_versions))
 
@@ -294,7 +300,7 @@ class CachingStaleStatusResolver:
         proj_dep_keys = self.asset_graph.get_parents(key)
 
         if provenance:
-            prov_versions = provenance.input_logical_versions
+            prov_versions = provenance.input_data_versions
             all_dep_keys = sorted(set(proj_dep_keys).union(prov_versions.keys()))
             for dep_key in all_dep_keys:
                 if dep_key not in prov_versions:
@@ -398,7 +404,7 @@ class CachingStaleStatusResolver:
         if self._has_updated_dependencies(key=key):
             return True
         else:
-            for k, v in provenance.input_logical_versions.items():
+            for k, v in provenance.input_data_versions.items():
                 if self._get_projected_logical_version(key=k) != v:
                     return True
             return False
@@ -410,7 +416,7 @@ class CachingStaleStatusResolver:
             return True
         else:
             curr_dep_keys = self.asset_graph.get_parents(key)
-            old_dep_keys = set(provenance.input_logical_versions.keys())
+            old_dep_keys = set(provenance.input_data_versions.keys())
             return curr_dep_keys != old_dep_keys
 
     def _compute_projected_new_materialization_logical_version(self, key: AssetKey) -> DataVersion:
