@@ -652,7 +652,7 @@ type AssetNode {
   ): [ObservationEvent!]!
   computeKind: String
   configField: ConfigTypeField
-  currentLogicalVersion: String
+  currentDataVersion: String
   dependedBy: [AssetDependency!]!
   dependedByKeys: [AssetKey!]!
   dependencies: [AssetDependency!]!
@@ -679,7 +679,7 @@ type AssetNode {
   partitionDefinition: PartitionDefinition
   partitionKeys: [String!]!
   partitionKeysByDimension(startIdx: Int, endIdx: Int): [DimensionPartitionKeys!]!
-  projectedLogicalVersion: String
+  projectedDataVersion: String
   repository: Repository!
   requiredResources: [ResourceRequirement!]!
   staleStatus: StaleStatus

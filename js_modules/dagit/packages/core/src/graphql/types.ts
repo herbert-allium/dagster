@@ -176,7 +176,7 @@ export type AssetNode = {
   assetObservations: Array<ObservationEvent>;
   computeKind: Maybe<Scalars['String']>;
   configField: Maybe<ConfigTypeField>;
-  currentLogicalVersion: Maybe<Scalars['String']>;
+  currentDataVersion: Maybe<Scalars['String']>;
   dependedBy: Array<AssetDependency>;
   dependedByKeys: Array<AssetKey>;
   dependencies: Array<AssetDependency>;
@@ -203,7 +203,7 @@ export type AssetNode = {
   partitionKeys: Array<Scalars['String']>;
   partitionKeysByDimension: Array<DimensionPartitionKeys>;
   partitionStats: Maybe<PartitionStats>;
-  projectedLogicalVersion: Maybe<Scalars['String']>;
+  projectedDataVersion: Maybe<Scalars['String']>;
   repository: Repository;
   requiredResources: Array<ResourceRequirement>;
   staleStatus: Maybe<StaleStatus>;

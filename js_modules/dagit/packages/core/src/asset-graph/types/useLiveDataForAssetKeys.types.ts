@@ -32,8 +32,8 @@ export type AssetGraphLiveQuery = {
     __typename: 'AssetNode';
     id: string;
     opNames: Array<string>;
-    currentLogicalVersion: string | null;
-    projectedLogicalVersion: string | null;
+    currentDataVersion: string | null;
+    projectedDataVersion: string | null;
     repository: {__typename: 'Repository'; id: string};
     assetKey: {__typename: 'AssetKey'; path: Array<string>};
     assetMaterializations: Array<{
