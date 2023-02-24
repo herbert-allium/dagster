@@ -15,11 +15,11 @@ from dagster._core.errors import (
 )
 from dagster._core.instance import DagsterInstance
 from dagster._serdes import (
-    serialize,
+    serialize_value,
     whitelist_for_serdes,
 )
 from dagster._serdes.errors import DeserializationError
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 from dagster._seven import JSONDecodeError
 
 from ..decorator_utils import get_function_params
@@ -54,7 +54,7 @@ class FreshnessPolicySensorCursor(
     @staticmethod
     def is_valid(json_str: str) -> bool:
         try:
-            deserialize(json_str, FreshnessPolicySensorCursor)
+            deserialize_value(json_str, FreshnessPolicySensorCursor)
             return True
         except (JSONDecodeError, DeserializationError):
             return False
@@ -72,11 +72,11 @@ class FreshnessPolicySensorCursor(
         return {AssetKey.from_user_string(k): v for k, v in self.minutes_late_by_key_str.items()}
 
     def to_json(self) -> str:
-        return serialize(cast(NamedTuple, self))
+        return serialize_value(cast(NamedTuple, self))
 
     @staticmethod
     def from_json(json_str: str) -> "FreshnessPolicySensorCursor":
-        return deserialize(json_str, FreshnessPolicySensorCursor)
+        return deserialize_value(json_str, FreshnessPolicySensorCursor)
 
 
 class FreshnessPolicySensorContext(

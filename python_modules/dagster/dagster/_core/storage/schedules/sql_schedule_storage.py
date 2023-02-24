@@ -29,8 +29,8 @@ from dagster._core.scheduler.instigation import (
     TickStatus,
 )
 from dagster._core.storage.sql import SqlAlchemyQuery, SqlAlchemyRow
-from dagster._serdes import serialize
-from dagster._serdes.serdes import deserialize
+from dagster._serdes import serialize_value
+from dagster._serdes.serdes import deserialize_value
 from dagster._utils import PrintFn, utc_datetime_from_timestamp
 
 from .base import ScheduleStorage
@@ -63,7 +63,7 @@ class SqlScheduleStorage(ScheduleStorage):
     def _deserialize_rows(
         self, rows: Sequence[SqlAlchemyRow], as_type: Type[T_NamedTuple]
     ) -> Sequence[T_NamedTuple]:
-        return list(map(lambda r: deserialize(r[0], as_type), rows))
+        return list(map(lambda r: deserialize_value(r[0], as_type), rows))
 
     def all_instigator_state(
         self,
@@ -132,7 +132,7 @@ class SqlScheduleStorage(ScheduleStorage):
                     repository_selector_id=state.repository_selector_id,
                     status=state.status.value,
                     instigator_type=state.instigator_type.value,
-                    instigator_body=serialize(state),
+                    instigator_body=serialize_value(state),
                 )
             )
         except db_exc.IntegrityError:
@@ -142,7 +142,7 @@ class SqlScheduleStorage(ScheduleStorage):
                 .values(
                     status=state.status.value,
                     instigator_type=state.instigator_type.value,
-                    instigator_body=serialize(state),
+                    instigator_body=serialize_value(state),
                     update_timestamp=pendulum.now("UTC"),
                 )
             )
@@ -157,7 +157,7 @@ class SqlScheduleStorage(ScheduleStorage):
                         repository_origin_id=state.repository_origin_id,
                         status=state.status.value,
                         job_type=state.instigator_type.value,
-                        job_body=serialize(state),
+                        job_body=serialize_value(state),
                     )
                 )
             except db_exc.IntegrityError as exc:
@@ -182,7 +182,7 @@ class SqlScheduleStorage(ScheduleStorage):
 
         values = {
             "status": state.status.value,
-            "job_body": serialize(state),
+            "job_body": serialize_value(state),
             "update_timestamp": pendulum.now("UTC"),
         }
         if self.has_instigators_table():
@@ -316,7 +316,7 @@ class SqlScheduleStorage(ScheduleStorage):
         for row in rows:
             tick_id = row[0]
             selector_id = row[1]
-            tick_data = deserialize(row[2], TickData)
+            tick_data = deserialize_value(row[2], TickData)
             results[selector_id].append(InstigatorTick(tick_id, tick_data))
         return results
 
@@ -358,7 +358,7 @@ class SqlScheduleStorage(ScheduleStorage):
         )
 
         rows = self.execute(query)
-        return list(map(lambda r: InstigatorTick(r[0], deserialize(r[1], TickData)), rows))
+        return list(map(lambda r: InstigatorTick(r[0], deserialize_value(r[1], TickData)), rows))
 
     def create_tick(self, tick_data: TickData) -> InstigatorTick:
         check.inst_param(tick_data, "tick_data", TickData)
@@ -368,7 +368,7 @@ class SqlScheduleStorage(ScheduleStorage):
             "status": tick_data.status.value,
             "type": tick_data.instigator_type.value,
             "timestamp": utc_datetime_from_timestamp(tick_data.timestamp),
-            "tick_body": serialize(tick_data),
+            "tick_body": serialize_value(tick_data),
         }
         if self.has_instigators_table() and tick_data.selector_id:
             values["selector_id"] = tick_data.selector_id
@@ -394,7 +394,7 @@ class SqlScheduleStorage(ScheduleStorage):
             "status": tick.status.value,
             "type": tick.instigator_type.value,
             "timestamp": utc_datetime_from_timestamp(tick.timestamp),
-            "tick_body": serialize(tick.tick_data),
+            "tick_body": serialize_value(tick.tick_data),
         }
         if self.has_instigators_table() and tick.selector_id:
             values["selector_id"] = tick.selector_id

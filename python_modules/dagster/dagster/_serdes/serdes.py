@@ -335,7 +335,9 @@ class DefaultNamedTupleSerializer(NamedTupleSerializer[T_NamedTuple]):
         # the constructor. If a property is present in the serialized object, but doesn't exist in
         # the version of the class loaded into memory, that property will be completely ignored.
         unpacked_dict = {
-            key: unpack(value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}")
+            key: unpack_value(
+                value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}"
+            )
             for key, value in storage_dict.items()
             if key in args_for_class
         }
@@ -366,7 +368,7 @@ class DefaultNamedTupleSerializer(NamedTupleSerializer[T_NamedTuple]):
         for key, inner_value in value._asdict().items():
             if key in skip_when_empty_fields and inner_value in EMPTY_VALUES_TO_SKIP:
                 continue
-            base_dict[key] = pack(inner_value, whitelist_map, f"{descent_path}.{key}")
+            base_dict[key] = pack_value(inner_value, whitelist_map, f"{descent_path}.{key}")
 
         klass_name = value.__class__.__name__
         base_dict["__class__"] = (
@@ -383,23 +385,23 @@ class DefaultNamedTupleSerializer(NamedTupleSerializer[T_NamedTuple]):
 ###################################################################################################
 
 
-def serialize(
+def serialize_value(
     val: PackableValue, whitelist_map: WhitelistMap = _WHITELIST_MAP, **json_kwargs: object
 ) -> str:
     """Serialize a whitelisted named tuple to a json encoded string."""
-    packed_value = pack(val, whitelist_map=whitelist_map)
+    packed_value = pack_value(val, whitelist_map=whitelist_map)
     return seven.json.dumps(packed_value, **json_kwargs)
 
 
 @overload
-def pack(
+def pack_value(
     val: T_Scalar, whitelist_map: WhitelistMap = ..., descent_path: Optional[str] = ...
 ) -> T_Scalar:
     ...
 
 
 @overload
-def pack(
+def pack_value(
     val: Union[
         Mapping[str, PackableValue], Set[PackableValue], FrozenSet[PackableValue], NamedTuple, Enum
     ],
@@ -410,7 +412,7 @@ def pack(
 
 
 @overload
-def pack(
+def pack_value(
     val: Sequence[PackableValue],
     whitelist_map: WhitelistMap = ...,
     descent_path: Optional[str] = ...,
@@ -418,7 +420,7 @@ def pack(
     ...
 
 
-def pack(
+def pack_value(
     val: PackableValue,
     whitelist_map: WhitelistMap = _WHITELIST_MAP,
     descent_path: Optional[str] = None,
@@ -500,7 +502,7 @@ U_PackableValue = TypeVar("U_PackableValue", bound=PackableValue, default=Packab
 
 
 @overload
-def deserialize(
+def deserialize_value(
     val: str,
     as_type: Tuple[Type[T_PackableValue], Type[U_PackableValue]],
     whitelist_map: WhitelistMap = ...,
@@ -509,7 +511,7 @@ def deserialize(
 
 
 @overload
-def deserialize(
+def deserialize_value(
     val: str,
     as_type: Type[T_PackableValue],
     whitelist_map: WhitelistMap = ...,
@@ -518,7 +520,7 @@ def deserialize(
 
 
 @overload
-def deserialize(
+def deserialize_value(
     val: str,
     as_type: None = ...,
     whitelist_map: WhitelistMap = ...,
@@ -526,7 +528,7 @@ def deserialize(
     ...
 
 
-def deserialize(
+def deserialize_value(
     val: str,
     as_type: Optional[
         Union[Type[T_PackableValue], Tuple[Type[T_PackableValue], Type[U_PackableValue]]]
@@ -544,7 +546,7 @@ def deserialize(
     """
     check.str_param(val, "val")
     packed_value = seven.json.loads(val)
-    unpacked_value = unpack(packed_value, whitelist_map=whitelist_map)
+    unpacked_value = unpack_value(packed_value, whitelist_map=whitelist_map)
     if as_type and not (
         is_named_tuple_instance(unpacked_value)
         if as_type is NamedTuple
@@ -557,7 +559,7 @@ def deserialize(
 
 
 @overload
-def unpack(
+def unpack_value(
     val: JsonSerializableValue,
     as_type: Tuple[Type[T_PackableValue], Type[U_PackableValue]],
     whitelist_map: WhitelistMap = ...,
@@ -567,7 +569,7 @@ def unpack(
 
 
 @overload
-def unpack(
+def unpack_value(
     val: JsonSerializableValue,
     as_type: Type[T_PackableValue],
     whitelist_map: WhitelistMap = ...,
@@ -577,7 +579,7 @@ def unpack(
 
 
 @overload
-def unpack(
+def unpack_value(
     val: JsonSerializableValue,
     as_type: None = ...,
     whitelist_map: WhitelistMap = ...,
@@ -586,7 +588,7 @@ def unpack(
     ...
 
 
-def unpack(
+def unpack_value(
     val: JsonSerializableValue,
     as_type: Optional[
         Union[Type[T_PackableValue], Tuple[Type[T_PackableValue], Type[U_PackableValue]]]

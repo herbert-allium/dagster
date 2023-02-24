@@ -8,7 +8,7 @@ from dagster._core.events import DagsterEvent, EngineEventData
 from dagster._core.execution.context.system import PlanOrchestrationContext
 from dagster._core.execution.plan.plan import ExecutionPlan
 from dagster._core.storage.tags import PRIORITY_TAG
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 from dagster._utils.error import serializable_error_info_from_exc_info
 
 from dagster_celery.executor import CeleryExecutor
@@ -105,7 +105,7 @@ def core_celery_execution_loop(
                             sys.exc_info()
                         )
                     for step_event in step_events:
-                        event = deserialize(step_event, DagsterEvent)
+                        event = deserialize_value(step_event, DagsterEvent)
                         yield event
                         active_execution.handle_event(event)
 

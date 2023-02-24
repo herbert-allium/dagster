@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import dagster._check as check
-from dagster._serdes import pack
+from dagster._serdes import pack_value
 from dagster._seven import json
 from dagster._utils.error import serializable_error_info_from_exc_info
 from dagster_graphql.implementation.utils import ErrorCapture
@@ -81,7 +81,7 @@ class GraphQLServer(ABC):
                 )
                 fmtd["extensions"] = {
                     **fmtd.get("extensions", {}),
-                    "errorInfo": pack(serializable_error),
+                    "errorInfo": pack_value(serializable_error),
                 }
 
             results.append(fmtd)

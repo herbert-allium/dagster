@@ -32,10 +32,10 @@ from dagster._core.utils import toposort_flatten
 from dagster._serdes import (
     DefaultNamedTupleSerializer,
     create_snapshot_id,
-    deserialize,
+    deserialize_value,
     whitelist_for_serdes,
 )
-from dagster._serdes.serdes import unpack
+from dagster._serdes.serdes import unpack_value
 
 from .config_types import build_config_schema_snapshot
 from .dagster_types import DagsterTypeNamespaceSnapshot, build_dagster_type_namespace_snapshot
@@ -73,7 +73,9 @@ class PipelineSnapshotSerializer(DefaultNamedTupleSerializer):
     ):
         # unpack all stored fields
         unpacked_dict = {
-            key: unpack(value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}")
+            key: unpack_value(
+                value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}"
+            )
             for key, value in storage_dict.items()
         }
         # called by the serdes layer, delegates to helper method with expanded kwargs
@@ -311,7 +313,7 @@ def _construct_fields(
             construct_config_type_from_snap(config_snap_map[field.type_key], config_snap_map),
             description=field.description,
             is_required=field.is_required,
-            default_value=deserialize(cast(str, field.default_value_as_json_str))
+            default_value=deserialize_value(cast(str, field.default_value_as_json_str))
             if field.default_provided
             else FIELD_NO_DEFAULT_PROVIDED,
         )

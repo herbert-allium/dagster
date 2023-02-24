@@ -21,7 +21,7 @@ from dagster._core.execution.plan.external_step import (
     PICKLED_STEP_RUN_REF_FILE_NAME,
     step_context_to_step_run_ref,
 )
-from dagster._serdes import deserialize
+from dagster._serdes import deserialize_value
 from dagster._utils.backoff import backoff
 from dagster_pyspark.utils import build_pyspark_zip
 from databricks_cli.sdk import JobsService
@@ -341,7 +341,7 @@ class DatabricksPySparkStepLauncher(StepLauncher):
             serialized_records = self.databricks_runner.client.read_file(path)
             if not serialized_records:
                 return []
-            return deserialize(pickle.loads(gzip.decompress(serialized_records)))
+            return deserialize_value(pickle.loads(gzip.decompress(serialized_records)))
 
         try:
             # reading from dbfs while it writes can be flaky

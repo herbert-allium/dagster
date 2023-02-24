@@ -3,7 +3,7 @@ from typing import NamedTuple, Optional
 import dagster._check as check
 from dagster._serdes import whitelist_for_serdes
 from dagster._serdes.errors import DeserializationError
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 
 
 @whitelist_for_serdes
@@ -23,7 +23,7 @@ class AssetDetails(NamedTuple("_AssetDetails", [("last_wipe_timestamp", Optional
             return None
 
         try:
-            details = deserialize(db_string, AssetDetails)
+            details = deserialize_value(db_string, AssetDetails)
         except DeserializationError:
             return None
 

@@ -29,11 +29,11 @@ from dagster._core.events import PIPELINE_RUN_STATUS_TO_EVENT_TYPE, DagsterEvent
 from dagster._core.instance import DagsterInstance
 from dagster._core.storage.pipeline_run import DagsterRun, DagsterRunStatus, RunsFilter
 from dagster._serdes import (
-    serialize,
+    serialize_value,
     whitelist_for_serdes,
 )
 from dagster._serdes.errors import DeserializationError
-from dagster._serdes.serdes import deserialize, register_serdes_tuple_fallbacks
+from dagster._serdes.serdes import deserialize_value, register_serdes_tuple_fallbacks
 from dagster._seven import JSONDecodeError
 from dagster._utils import utc_datetime_from_timestamp
 from dagster._utils.backcompat import deprecation_warning
@@ -90,17 +90,17 @@ class RunStatusSensorCursor(
     @staticmethod
     def is_valid(json_str: str) -> bool:
         try:
-            obj = deserialize(json_str, RunStatusSensorCursor)
+            obj = deserialize_value(json_str, RunStatusSensorCursor)
             return isinstance(obj, RunStatusSensorCursor)
         except (JSONDecodeError, DeserializationError):
             return False
 
     def to_json(self) -> str:
-        return serialize(cast(NamedTuple, self))
+        return serialize_value(cast(NamedTuple, self))
 
     @staticmethod
     def from_json(json_str: str) -> "RunStatusSensorCursor":
-        return deserialize(json_str, RunStatusSensorCursor)
+        return deserialize_value(json_str, RunStatusSensorCursor)
 
 
 # handle backcompat

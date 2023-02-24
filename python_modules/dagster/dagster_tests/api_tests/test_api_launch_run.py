@@ -8,7 +8,7 @@ from dagster._core.test_utils import (
 )
 from dagster._grpc.server import ExecuteExternalPipelineArgs
 from dagster._grpc.types import StartRunResult
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 
 from .utils import get_bar_repo_repository_location
 
@@ -36,7 +36,7 @@ def test_launch_run_with_unloadable_pipeline_grpc():
             original_origin = job_handle.get_external_origin()
 
             # point the api to a pipeline that cannot be loaded
-            res = deserialize(
+            res = deserialize_value(
                 api_client.start_run(
                     ExecuteExternalPipelineArgs(
                         pipeline_origin=original_origin._replace(
@@ -83,7 +83,7 @@ def test_launch_run_grpc():
             run = create_run_for_test(instance, "foo")
             run_id = run.run_id
 
-            res = deserialize(
+            res = deserialize_value(
                 api_client.start_run(
                     ExecuteExternalPipelineArgs(
                         pipeline_origin=job_handle.get_external_origin(),
@@ -129,7 +129,7 @@ def test_launch_unloadable_run_grpc():
             run_id = run.run_id
 
             with instance_for_test() as other_instance:
-                res = deserialize(
+                res = deserialize_value(
                     api_client.start_run(
                         ExecuteExternalPipelineArgs(
                             pipeline_origin=job_handle.get_external_origin(),

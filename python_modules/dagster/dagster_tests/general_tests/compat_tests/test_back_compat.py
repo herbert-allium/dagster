@@ -38,8 +38,8 @@ from dagster._serdes import DefaultNamedTupleSerializer, create_snapshot_id
 from dagster._serdes.serdes import (
     WhitelistMap,
     _whitelist_for_serdes,
-    deserialize,
-    serialize,
+    deserialize_value,
+    serialize_value,
 )
 from dagster._utils.error import SerializableErrorInfo
 from dagster._utils.test import copy_directory
@@ -269,7 +269,7 @@ def instance_from_debug_payloads(payload_files):
     for input_file in payload_files:
         with GzipFile(input_file, "rb") as file:
             blob = file.read().decode("utf-8")
-            debug_payload = deserialize(blob, DebugRunPayload)
+            debug_payload = deserialize_value(blob, DebugRunPayload)
 
             debug_payloads.append(debug_payload)
 
@@ -449,7 +449,7 @@ def test_0_11_0_add_asset_columns():
 
 def test_rename_event_log_entry():
     old_event_record = """{"__class__":"EventRecord","dagster_event":{"__class__":"DagsterEvent","event_specific_data":null,"event_type_value":"PIPELINE_SUCCESS","logging_tags":{},"message":"Finished execution of pipeline.","pid":71356,"pipeline_name":"error_monster","solid_handle":null,"step_handle":null,"step_key":null,"step_kind_value":null},"error_info":null,"level":10,"message":"error_monster - 4be295b5-fcf2-47cc-8e90-cb14d3cf3ac7 - 71356 - PIPELINE_SUCCESS - Finished execution of pipeline.","pipeline_name":"error_monster","run_id":"4be295b5-fcf2-47cc-8e90-cb14d3cf3ac7","step_key":null,"timestamp":1622659924.037028,"user_message":"Finished execution of pipeline."}"""
-    event_log_entry = deserialize(old_event_record, EventLogEntry)
+    event_log_entry = deserialize_value(old_event_record, EventLogEntry)
     dagster_event = event_log_entry.dagster_event
     assert isinstance(dagster_event, DagsterEvent)
     assert dagster_event.event_type_value == "PIPELINE_SUCCESS"
@@ -523,7 +523,7 @@ def test_0_12_0_extract_asset_index_cols():
 def test_solid_handle_node_handle():
     # serialize in current code
     test_handle = NodeHandle("test", None)
-    test_str = serialize(test_handle)
+    test_str = serialize_value(test_handle)
 
     # deserialize in "legacy" code
     legacy_env = WhitelistMap.create()
@@ -532,7 +532,7 @@ def test_solid_handle_node_handle():
     class SolidHandle(namedtuple("_SolidHandle", "name parent")):
         pass
 
-    result = deserialize(test_str, whitelist_map=legacy_env)
+    result = deserialize_value(test_str, whitelist_map=legacy_env)
     assert isinstance(result, SolidHandle)
     assert result.name == test_handle.name
 
@@ -540,7 +540,7 @@ def test_solid_handle_node_handle():
 def test_pipeline_run_dagster_run():
     # serialize in current code
     test_run = DagsterRun(pipeline_name="test")
-    test_str = serialize(test_run)
+    test_str = serialize_value(test_run)
 
     # deserialize in "legacy" code
     legacy_env = WhitelistMap.create()
@@ -564,7 +564,7 @@ def test_pipeline_run_dagster_run():
         QUEUED = "QUEUED"
         NOT_STARTED = "NOT_STARTED"
 
-    result = deserialize(test_str, whitelist_map=legacy_env)
+    result = deserialize_value(test_str, whitelist_map=legacy_env)
     assert isinstance(result, PipelineRun)
     assert result.pipeline_name == test_run.pipeline_name
 
@@ -572,7 +572,7 @@ def test_pipeline_run_dagster_run():
 def test_pipeline_run_status_dagster_run_status():
     # serialize in current code
     test_status = DagsterRunStatus("QUEUED")
-    test_str = serialize(test_status)
+    test_str = serialize_value(test_status)
 
     # deserialize in "legacy" code
     legacy_env = WhitelistMap.create()
@@ -581,7 +581,7 @@ def test_pipeline_run_status_dagster_run_status():
     class PipelineRunStatus(Enum):
         QUEUED = "QUEUED"
 
-    result = deserialize(test_str, whitelist_map=legacy_env)
+    result = deserialize_value(test_str, whitelist_map=legacy_env)
     assert isinstance(result, PipelineRunStatus)
     assert result.value == test_status.value
 
@@ -682,8 +682,8 @@ def test_external_job_origin_instigator_origin():
         ),
         instigator_name="simple_schedule",
     )
-    instigator_origin_str = serialize(instigator_origin)
-    instigator_to_job = deserialize(instigator_origin_str, whitelist_map=legacy_env)
+    instigator_origin_str = serialize_value(instigator_origin)
+    instigator_to_job = deserialize_value(instigator_origin_str, whitelist_map=legacy_env)
     assert isinstance(instigator_to_job, klass)
     # ensure that the origin id is stable
     assert instigator_to_job.get_id() == instigator_origin.get_id()
@@ -698,9 +698,9 @@ def test_external_job_origin_instigator_origin():
         ),
         job_name="simple_schedule",
     )
-    job_origin_str = serialize(job_origin, legacy_env)
+    job_origin_str = serialize_value(job_origin, legacy_env)
 
-    job_to_instigator = deserialize(job_origin_str, ExternalInstigatorOrigin)
+    job_to_instigator = deserialize_value(job_origin_str, ExternalInstigatorOrigin)
     # ensure that the origin id is stable
     assert job_to_instigator.get_id() == job_origin.get_id()
 
@@ -785,9 +785,9 @@ def test_legacy_event_log_load():
         timestamp=time.time(),
     )
 
-    storage_str = serialize(new_event)
+    storage_str = serialize_value(new_event)
 
-    result = deserialize(storage_str, EventLogEntry, whitelist_map=legacy_env)
+    result = deserialize_value(storage_str, EventLogEntry, whitelist_map=legacy_env)
     assert result.message is not None
 
 

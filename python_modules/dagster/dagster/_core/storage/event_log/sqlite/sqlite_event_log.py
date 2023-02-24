@@ -42,7 +42,7 @@ from dagster._serdes import (
     ConfigurableClassData,
 )
 from dagster._serdes.errors import DeserializationError
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 from dagster._utils import mkdir_p
 
 from ..schema import SqlEventLogStorageMetadata, SqlEventLogStorageTable
@@ -342,7 +342,7 @@ class SqliteEventLogStorage(SqlEventLogStorage, ConfigurableClass):
 
             for row_id, json_str in results:
                 try:
-                    event_record = deserialize(json_str, EventLogEntry)
+                    event_record = deserialize_value(json_str, EventLogEntry)
                     event_records.append(
                         EventLogRecord(storage_id=row_id, event_log_entry=event_record)
                     )

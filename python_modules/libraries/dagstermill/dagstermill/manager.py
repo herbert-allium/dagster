@@ -39,7 +39,7 @@ from dagster._core.system_config.objects import ResolvedRunConfig, ResourceConfi
 from dagster._core.utils import make_new_run_id
 from dagster._legacy import Materialization, ModeDefinition, PipelineDefinition
 from dagster._loggers import colored_console_logger
-from dagster._serdes import unpack
+from dagster._serdes import unpack_value
 from dagster._utils import EventGenerationManager
 from dagster._utils.backcompat import deprecation_warning
 
@@ -141,14 +141,14 @@ class Manager:
         pipeline_def = pipeline.get_definition()
 
         try:
-            instance_ref = unpack(instance_ref_dict, InstanceRef)
+            instance_ref = unpack_value(instance_ref_dict, InstanceRef)
             instance = DagsterInstance.from_ref(instance_ref)
         except Exception as err:
             raise DagstermillError(
                 "Error when attempting to resolve DagsterInstance from serialized InstanceRef"
             ) from err
 
-        dagster_run = unpack(pipeline_run_dict, DagsterRun)
+        dagster_run = unpack_value(pipeline_run_dict, DagsterRun)
 
         node_handle = NodeHandle.from_dict(node_handle_kwargs)
         op = pipeline_def.get_solid(node_handle)

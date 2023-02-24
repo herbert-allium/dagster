@@ -13,7 +13,7 @@ from dagster._core.storage.tags import GRPC_INFO_TAG
 from dagster._grpc.types import CancelExecutionResult
 from dagster._serdes import (
     ConfigurableClass,
-    deserialize,
+    deserialize_value,
 )
 from dagster._utils.merger import merge_dicts
 
@@ -75,7 +75,7 @@ class DefaultRunLauncher(RunLauncher, ConfigurableClass):
             },
         )
 
-        res = deserialize(
+        res = deserialize_value(
             grpc_client.start_run(
                 ExecuteExternalPipelineArgs(
                     pipeline_origin=run.external_pipeline_origin,
@@ -175,7 +175,7 @@ class DefaultRunLauncher(RunLauncher, ConfigurableClass):
             return False
 
         self._instance.report_run_canceling(run)
-        res = deserialize(
+        res = deserialize_value(
             client.cancel_execution(CancelExecutionRequest(run_id=run_id)), CancelExecutionResult
         )
         return res.success

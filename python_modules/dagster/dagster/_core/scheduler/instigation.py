@@ -17,7 +17,7 @@ from dagster._serdes.serdes import (
     register_serdes_enum_fallbacks,
     register_serdes_tuple_fallbacks,
     replace_storage_keys,
-    unpack,
+    unpack_value,
     whitelist_for_serdes,
 )
 from dagster._utils.error import SerializableErrorInfo
@@ -138,7 +138,7 @@ class InstigatorStateSerializer(DefaultNamedTupleSerializer):
     ) -> NamedTuple:
         klass_kwargs = {}
         for key, value in storage_dict.items():
-            unpacked = unpack(
+            unpacked = unpack_value(
                 value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}"
             )
             if key in args_for_class:
@@ -293,7 +293,7 @@ class TickSerializer(DefaultNamedTupleSerializer):
     ) -> NamedTuple:
         klass_kwargs = {}
         for key, value in storage_dict.items():
-            unpacked = unpack(
+            unpacked = unpack_value(
                 value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}"
             )
             if key in args_for_class:
@@ -445,7 +445,7 @@ class TickDataSerializer(DefaultNamedTupleSerializer):
     ) -> NamedTuple:
         klass_kwargs = {}
         for key, value in storage_dict.items():
-            unpacked = unpack(
+            unpacked = unpack_value(
                 value, whitelist_map=whitelist_map, descent_path=f"{descent_path}.{key}"
             )
             if key in args_for_class:

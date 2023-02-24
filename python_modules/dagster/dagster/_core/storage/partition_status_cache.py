@@ -25,7 +25,7 @@ from dagster._core.storage.tags import (
 )
 from dagster._serdes import whitelist_for_serdes
 from dagster._serdes.errors import DeserializationError
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 
 CACHEABLE_PARTITION_TYPES = (
     TimeWindowPartitionsDefinition,
@@ -83,7 +83,7 @@ class AssetStatusCacheValue(
             return None
 
         try:
-            cached_data = deserialize(db_string, AssetStatusCacheValue)
+            cached_data = deserialize_value(db_string, AssetStatusCacheValue)
         except DeserializationError:
             return None
 

@@ -2,8 +2,8 @@ from dagster import logger, resource
 from dagster._core.snap import PipelineSnapshot
 from dagster._core.snap.mode import ModeDefSnap
 from dagster._legacy import ModeDefinition, pipeline
-from dagster._serdes import serialize
-from dagster._serdes.serdes import deserialize
+from dagster._serdes import serialize_value
+from dagster._serdes.serdes import deserialize_value
 
 
 def test_mode_snap(snapshot):
@@ -46,6 +46,6 @@ def test_mode_snap(snapshot):
     assert len(pipeline_snapshot.mode_def_snaps) == 1
     mode_def_snap = pipeline_snapshot.mode_def_snaps[0]
 
-    snapshot.assert_match(serialize(mode_def_snap))
+    snapshot.assert_match(serialize_value(mode_def_snap))
 
-    assert mode_def_snap == deserialize(serialize(mode_def_snap), ModeDefSnap)
+    assert mode_def_snap == deserialize_value(serialize_value(mode_def_snap), ModeDefSnap)

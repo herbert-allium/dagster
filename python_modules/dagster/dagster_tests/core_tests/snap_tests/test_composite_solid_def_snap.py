@@ -4,8 +4,8 @@ from dagster._core.snap import (
     DependencyStructureIndex,
     build_composite_solid_def_snap,
 )
-from dagster._serdes import serialize
-from dagster._serdes.serdes import deserialize
+from dagster._serdes import serialize_value
+from dagster._serdes.serdes import deserialize_value
 
 
 def test_noop_comp_solid_definition():
@@ -20,7 +20,10 @@ def test_noop_comp_solid_definition():
     comp_solid_meta = build_composite_solid_def_snap(comp_graph)
 
     assert isinstance(comp_solid_meta, CompositeSolidDefSnap)
-    assert deserialize(serialize(comp_solid_meta), CompositeSolidDefSnap) == comp_solid_meta
+    assert (
+        deserialize_value(serialize_value(comp_solid_meta), CompositeSolidDefSnap)
+        == comp_solid_meta
+    )
 
 
 def test_basic_comp_solid_definition():
@@ -39,7 +42,10 @@ def test_basic_comp_solid_definition():
     comp_solid_meta = build_composite_solid_def_snap(comp_graph)
 
     assert isinstance(comp_solid_meta, CompositeSolidDefSnap)
-    assert deserialize(serialize(comp_solid_meta), CompositeSolidDefSnap) == comp_solid_meta
+    assert (
+        deserialize_value(serialize_value(comp_solid_meta), CompositeSolidDefSnap)
+        == comp_solid_meta
+    )
 
     index = DependencyStructureIndex(comp_solid_meta.dep_structure_snapshot)
     assert index.get_invocation("return_one")
@@ -64,7 +70,10 @@ def test_complex_comp_solid_definition():
     comp_solid_meta = build_composite_solid_def_snap(comp_graph)
 
     assert isinstance(comp_solid_meta, CompositeSolidDefSnap)
-    assert deserialize(serialize(comp_solid_meta), CompositeSolidDefSnap) == comp_solid_meta
+    assert (
+        deserialize_value(serialize_value(comp_solid_meta), CompositeSolidDefSnap)
+        == comp_solid_meta
+    )
 
     index = DependencyStructureIndex(comp_solid_meta.dep_structure_snapshot)
     assert index.get_invocation("return_one")

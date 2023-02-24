@@ -4,7 +4,7 @@ from unittest import mock
 
 from dagster import job, op
 from dagster._core.storage.runs.sql_run_storage import defensively_unpack_pipeline_snapshot_query
-from dagster._serdes import serialize
+from dagster._serdes import serialize_value
 
 
 def test_defensive_pipeline_not_a_string():
@@ -90,7 +90,7 @@ def test_correctly_fetch_decompress_parse_snapshot():
     assert (
         defensively_unpack_pipeline_snapshot_query(
             mock_logger,
-            [zlib.compress(serialize(noop_pipeline_snapshot).encode("utf-8"))],
+            [zlib.compress(serialize_value(noop_pipeline_snapshot).encode("utf-8"))],
         )
         == noop_pipeline_snapshot
     )

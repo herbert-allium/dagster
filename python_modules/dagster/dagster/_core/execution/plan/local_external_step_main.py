@@ -10,7 +10,7 @@ from dagster._core.execution.plan.external_step import (
     run_step_from_ref,
 )
 from dagster._core.storage.file_manager import LocalFileHandle, LocalFileManager
-from dagster._serdes import serialize
+from dagster._serdes import serialize_value
 
 
 def main(step_run_ref_path: str) -> None:
@@ -29,7 +29,7 @@ def main(step_run_ref_path: str) -> None:
     finally:
         events_out_path = os.path.join(os.path.dirname(step_run_ref_path), PICKLED_EVENTS_FILE_NAME)
         with open(events_out_path, "wb") as events_file:
-            pickle.dump(serialize(all_events), events_file)
+            pickle.dump(serialize_value(all_events), events_file)
 
 
 if __name__ == "__main__":

@@ -52,8 +52,8 @@ from dagster._core.storage.tags import (
 )
 from dagster._daemon.types import DaemonHeartbeat
 from dagster._serdes import (
-    deserialize,
-    serialize,
+    deserialize_value,
+    serialize_value,
 )
 from dagster._seven import JSONDecodeError
 from dagster._utils import PrintFn, utc_datetime_from_timestamp
@@ -141,7 +141,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             run_id=pipeline_run.run_id,
             pipeline_name=pipeline_run.pipeline_name,
             status=pipeline_run.status.value,
-            run_body=serialize(pipeline_run),
+            run_body=serialize_value(pipeline_run),
             snapshot_id=pipeline_run.pipeline_snapshot_id,
             partition=partition,
             partition_set=partition_set,
@@ -201,7 +201,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                 RunsTable.update()  # pylint: disable=no-value-for-parameter
                 .where(RunsTable.c.run_id == run_id)
                 .values(
-                    run_body=serialize(run.with_status(new_pipeline_status)),
+                    run_body=serialize_value(run.with_status(new_pipeline_status)),
                     status=new_pipeline_status.value,
                     update_timestamp=now,
                     **kwargs,
@@ -209,7 +209,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             )
 
     def _row_to_run(self, row: SqlAlchemyRow) -> DagsterRun:
-        run = deserialize(row["run_body"], DagsterRun)
+        run = deserialize_value(row["run_body"], DagsterRun)
         status = DagsterRunStatus(row["status"])
         # NOTE: the status column is more trustworthy than the status in the run body, since concurrent
         # writes (e.g.  handle_run_event and add_tags) can cause the status in the body to be out of
@@ -577,7 +577,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                 RunsTable.update()  # pylint: disable=no-value-for-parameter
                 .where(RunsTable.c.run_id == run_id)
                 .values(
-                    run_body=serialize(run.with_tags(merge_dicts(current_tags, new_tags))),
+                    run_body=serialize_value(run.with_tags(merge_dicts(current_tags, new_tags))),
                     partition=partition,
                     partition_set=partition_set,
                     update_timestamp=pendulum.now("UTC"),
@@ -861,7 +861,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             snapshot_insert = (
                 SnapshotsTable.insert().values(  # pylint: disable=no-value-for-parameter
                     snapshot_id=snapshot_id,
-                    snapshot_body=zlib.compress(serialize(snapshot_obj).encode("utf-8")),
+                    snapshot_body=zlib.compress(serialize_value(snapshot_obj).encode("utf-8")),
                     snapshot_type=snapshot_type.value,
                 )
             )
@@ -1044,7 +1044,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                         timestamp=utc_datetime_from_timestamp(daemon_heartbeat.timestamp),
                         daemon_type=daemon_heartbeat.daemon_type,
                         daemon_id=daemon_heartbeat.daemon_id,
-                        body=serialize(daemon_heartbeat),
+                        body=serialize_value(daemon_heartbeat),
                     )
                 )
             except db_exc.IntegrityError:
@@ -1054,7 +1054,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                     .values(  # pylint: disable=no-value-for-parameter
                         timestamp=utc_datetime_from_timestamp(daemon_heartbeat.timestamp),
                         daemon_id=daemon_heartbeat.daemon_id,
-                        body=serialize(daemon_heartbeat),
+                        body=serialize_value(daemon_heartbeat),
                     )
                 )
 
@@ -1063,7 +1063,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             rows = conn.execute(db.select(DaemonHeartbeatsTable.columns))
             heartbeats = []
             for row in rows:
-                heartbeats.append(deserialize(row.body, DaemonHeartbeat))
+                heartbeats.append(deserialize_value(row.body, DaemonHeartbeat))
             return {heartbeat.daemon_type: heartbeat for heartbeat in heartbeats}
 
     def wipe(self) -> None:
@@ -1100,13 +1100,13 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             query = query.limit(limit)
         query = query.order_by(BulkActionsTable.c.id.desc())
         rows = self.fetchall(query)
-        return [deserialize(row[0], PartitionBackfill) for row in rows]
+        return [deserialize_value(row[0], PartitionBackfill) for row in rows]
 
     def get_backfill(self, backfill_id: str) -> Optional[PartitionBackfill]:
         check.str_param(backfill_id, "backfill_id")
         query = db.select([BulkActionsTable.c.body]).where(BulkActionsTable.c.key == backfill_id)
         row = self.fetchone(query)
-        return deserialize(row[0], PartitionBackfill) if row else None
+        return deserialize_value(row[0], PartitionBackfill) if row else None
 
     def add_backfill(self, partition_backfill: PartitionBackfill) -> None:
         check.inst_param(partition_backfill, "partition_backfill", PartitionBackfill)
@@ -1114,7 +1114,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
             key=partition_backfill.backfill_id,
             status=partition_backfill.status.value,
             timestamp=utc_datetime_from_timestamp(partition_backfill.backfill_timestamp),
-            body=serialize(cast(NamedTuple, partition_backfill)),
+            body=serialize_value(cast(NamedTuple, partition_backfill)),
         )
 
         if self.has_bulk_actions_selector_cols():
@@ -1139,7 +1139,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                 .where(BulkActionsTable.c.key == backfill_id)
                 .values(
                     status=partition_backfill.status.value,
-                    body=serialize(partition_backfill),
+                    body=serialize_value(partition_backfill),
                 )
             )
 
@@ -1177,7 +1177,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
                 RunsTable.update()  # pylint: disable=no-value-for-parameter
                 .where(RunsTable.c.run_id == run.run_id)
                 .values(
-                    run_body=serialize(run.with_job_origin(job_origin)),
+                    run_body=serialize_value(run.with_job_origin(job_origin)),
                 )
             )
             conn.execute(
@@ -1218,7 +1218,7 @@ def defensively_unpack_pipeline_snapshot_query(
         return None
 
     try:
-        return deserialize(decoded_str, PipelineSnapshot)
+        return deserialize_value(decoded_str, PipelineSnapshot)
     except JSONDecodeError:
         _warn("Could not parse json in snapshot table.")
         return None

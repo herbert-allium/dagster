@@ -67,7 +67,7 @@ from dagster._core.types.loadable_target_origin import LoadableTargetOrigin
 from dagster._core.utils import make_new_run_id
 from dagster._legacy import AssetGroup, build_assets_job
 from dagster._loggers import colored_console_logger
-from dagster._serdes.serdes import deserialize
+from dagster._serdes.serdes import deserialize_value
 from dagster._utils import datetime_as_float
 
 TEST_TIMEOUT = 5
@@ -658,7 +658,7 @@ class TestEventLogStorage:
 
         rows = _fetch_all_events(storage, run_id=test_run_id)
 
-        out_events = list(map(lambda r: deserialize(r[0], EventLogEntry), rows))
+        out_events = list(map(lambda r: deserialize_value(r[0], EventLogEntry), rows))
 
         # messages can come out of order
         event_type_counts = CollectionsCounter(_event_types(out_events))

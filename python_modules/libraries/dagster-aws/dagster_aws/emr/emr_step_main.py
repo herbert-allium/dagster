@@ -12,7 +12,7 @@ from dagster._core.execution.plan.external_step import (
     external_instance_from_step_run_ref,
     run_step_from_ref,
 )
-from dagster._serdes import serialize
+from dagster._serdes import serialize_value
 
 from dagster_aws.s3.file_manager import S3FileHandle, S3FileManager
 
@@ -31,7 +31,7 @@ def main(step_run_ref_bucket, s3_dir_key):
     events_s3_key = os.path.dirname(s3_dir_key) + "/" + PICKLED_EVENTS_FILE_NAME
 
     def put_events(events):
-        file_obj = io.BytesIO(pickle.dumps(serialize(events)))
+        file_obj = io.BytesIO(pickle.dumps(serialize_value(events)))
         session.put_object(Body=file_obj, Bucket=events_bucket, Key=events_s3_key)
 
     # Set up a thread to handle writing events back to the plan process, so execution doesn't get

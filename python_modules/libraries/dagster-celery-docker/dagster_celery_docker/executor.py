@@ -17,7 +17,7 @@ from dagster._core.events import EngineEventData
 from dagster._core.events.utils import filter_dagster_events_from_cli_logs
 from dagster._core.execution.retries import RetryMode
 from dagster._core.storage.pipeline_run import DagsterRun
-from dagster._serdes import pack, serialize, unpack
+from dagster._serdes import pack_value, serialize_value, unpack_value
 from dagster._utils.merger import merge_dicts
 from dagster_celery.config import DEFAULT_CONFIG, dict_wrapper
 from dagster_celery.core_execution_loop import DELEGATE_MARKER, core_celery_execution_loop
@@ -202,7 +202,7 @@ def _submit_task_docker(app, plan_context, step, queue, priority, known_state):
 
     task = create_docker_task(app)
     task_signature = task.si(
-        execute_step_args_packed=pack(execute_step_args),
+        execute_step_args_packed=pack_value(execute_step_args),
         docker_config=plan_context.executor.docker_config,
     )
     return task_signature.apply_async(
@@ -220,7 +220,7 @@ def create_docker_task(celery_app, **task_kwargs):
         docker_config,
     ):
         """Run step execution in a Docker container."""
-        execute_step_args = unpack(
+        execute_step_args = unpack_value(
             check.dict_param(
                 execute_step_args_packed,
                 "execute_step_args_packed",
@@ -273,7 +273,7 @@ def create_docker_task(celery_app, **task_kwargs):
             step_key=execute_step_args.step_keys_to_execute[0],
         )
 
-        serialized_events = [serialize(engine_event)]
+        serialized_events = [serialize_value(engine_event)]
 
         docker_env = {}
         if docker_config.get("env_vars"):
@@ -327,7 +327,7 @@ def create_docker_task(celery_app, **task_kwargs):
                 raise Exception("No response from execute_step in CeleryDockerExecutor")
 
             events = filter_dagster_events_from_cli_logs(res.split("\n"))
-            serialized_events += [serialize(event) for event in events]
+            serialized_events += [serialize_value(event) for event in events]
 
         return serialized_events
 

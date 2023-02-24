@@ -7,11 +7,11 @@ from .serdes import (
     DefaultNamedTupleSerializer as DefaultNamedTupleSerializer,
     WhitelistMap as WhitelistMap,
     _pack as _pack,
-    deserialize as deserialize,
-    pack as pack,
+    deserialize_value as deserialize_value,
+    pack_value as pack_value,
     register_serdes_tuple_fallbacks as register_serdes_tuple_fallbacks,
-    serialize as serialize,
-    unpack as unpack,
+    serialize_value as serialize_value,
+    unpack_value as unpack_value,
     whitelist_for_serdes as whitelist_for_serdes,
 )
 from .utils import (

@@ -22,7 +22,7 @@ from dagster._core.events.utils import filter_dagster_events_from_cli_logs
 from dagster._core.execution.plan.objects import StepFailureData, UserFailureData
 from dagster._core.execution.retries import RetryMode
 from dagster._core.storage.pipeline_run import DagsterRun, DagsterRunStatus
-from dagster._serdes import pack, serialize, unpack
+from dagster._serdes import pack_value, serialize_value, unpack_value
 from dagster._utils.error import serializable_error_info_from_exc_info
 from dagster_celery.config import DEFAULT_CONFIG, dict_wrapper
 from dagster_celery.core_execution_loop import DELEGATE_MARKER
@@ -220,7 +220,7 @@ def _submit_task_k8s_job(app, plan_context, step, queue, priority, known_state):
 
     task = create_k8s_job_task(app)
     task_signature = task.si(
-        execute_step_args_packed=pack(execute_step_args),
+        execute_step_args_packed=pack_value(execute_step_args),
         job_config_dict=job_config.to_dict(),
         job_namespace=plan_context.executor.job_namespace,
         user_defined_k8s_config_dict=user_defined_k8s_config.to_dict(),
@@ -273,7 +273,7 @@ def create_k8s_job_task(celery_app, **task_kwargs):
         kubeconfig_file=None,
     ):
         """Run step execution in a K8s job pod."""
-        execute_step_args = unpack(
+        execute_step_args = unpack_value(
             check.dict_param(
                 execute_step_args_packed,
                 "execute_step_args_packed",
@@ -549,7 +549,7 @@ def create_k8s_job_task(celery_app, **task_kwargs):
                 )
 
         events += filter_dagster_events_from_cli_logs(logs)
-        serialized_events = [serialize(event) for event in events]
+        serialized_events = [serialize_value(event) for event in events]
         return serialized_events
 
     return _execute_step_k8s_job
