@@ -553,7 +553,7 @@ def deserialize_value(
         else isinstance(unpacked_value, as_type)
     ):
         raise DeserializationError(
-            f"Deserialized object was not expected type {as_type}, got {type(val)}"
+            f"Deserialized object was not expected type {as_type}, got {type(unpacked_value)}"
         )
     return unpacked_value
 

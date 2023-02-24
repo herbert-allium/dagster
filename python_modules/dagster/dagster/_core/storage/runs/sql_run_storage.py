@@ -895,7 +895,7 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
 
         row = self.fetchone(query)
 
-        return defensively_unpack_pipeline_snapshot_query(logging, row) if row else None  # type: ignore
+        return defensively_unpack_execution_plan_snapshot_query(logging, row) if row else None  # type: ignore
 
     def get_run_partition_data(self, runs_filter: RunsFilter) -> Sequence[RunPartitionData]:
         if self.has_built_index(RUN_PARTITIONS) and self.has_run_stats_index_cols():
@@ -1191,9 +1191,9 @@ class SqlRunStorage(RunStorage):  # pylint: disable=no-init
 GET_PIPELINE_SNAPSHOT_QUERY_ID = "get-pipeline-snapshot"
 
 
-def defensively_unpack_pipeline_snapshot_query(
+def defensively_unpack_execution_plan_snapshot_query(
     logger: logging.Logger, row: SqlAlchemyRow
-) -> Optional[PipelineSnapshot]:
+) -> Optional[Union[ExecutionPlanSnapshot, PipelineSnapshot]]:
     # no checking here because sqlalchemy returns a special
     # row proxy and don't want to instance check on an internal
     # implementation detail
@@ -1218,7 +1218,7 @@ def defensively_unpack_pipeline_snapshot_query(
         return None
 
     try:
-        return deserialize_value(decoded_str, PipelineSnapshot)
+        return deserialize_value(decoded_str, (ExecutionPlanSnapshot, PipelineSnapshot))
     except JSONDecodeError:
         _warn("Could not parse json in snapshot table.")
         return None
