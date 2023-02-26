@@ -214,6 +214,9 @@ class MayHaveInstanceWeakref(Generic[T_DagsterInstance]):
     def __init__(self):
         self._instance_weakref = None
 
+    def _has_instance(self) -> bool:
+        return hasattr(self, "_instance_weakref") and self._instance_weakref is not None
+
     @property
     def _instance(self) -> T_DagsterInstance:
         instance = (
@@ -223,7 +226,12 @@ class MayHaveInstanceWeakref(Generic[T_DagsterInstance]):
             if (hasattr(self, "_instance_weakref") and self._instance_weakref is not None)
             else None
         )
-        return cast(T_DagsterInstance, instance)
+        if instance is None:
+            raise DagsterInvariantViolationError(
+                "Attempted to resolve undefined DagsterInstance weakref."
+            )
+        else:
+            return instance
 
     def register_instance(self, instance: T_DagsterInstance):
         check.invariant(
