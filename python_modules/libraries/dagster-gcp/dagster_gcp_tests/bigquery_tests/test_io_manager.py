@@ -94,7 +94,7 @@ def test_get_select_statement_static_partitioned():
                 columns=["apple", "banana"],
             )
         )
-        == "SELECT apple, banana FROM db.schema1.table1 WHERE\nmy_fruit_col = 'apple'"
+        == "SELECT apple, banana FROM `db.schema1.table1` WHERE\nmy_fruit_col = 'apple'"
     )
 
 
