@@ -45,6 +45,7 @@ from dagster_graphql.schema.solids import (
 
 from ..implementation.fetch_assets import (
     build_materialized_partitions,
+    get_num_failed_partitions,
     get_freshness_info,
     get_materialized_partitions_subset,
 )
@@ -798,6 +799,7 @@ class GrapheneAssetNode(graphene.ObjectType):
                 numPartitions=partitions_def_data.get_partitions_definition().get_num_partitions(
                     dynamic_partitions_store=self._dynamic_partitions_loader
                 ),
+                numFailed=get_num_failed_partitions(graphene_info.context.instance, asset_key),
             )
         else:
             return None

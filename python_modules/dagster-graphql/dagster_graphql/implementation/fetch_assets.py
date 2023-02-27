@@ -12,6 +12,7 @@ from typing import (
     Union,
     cast,
 )
+from dagster._core.storage.pipeline_run import DagsterRunStatus, RunsFilter
 
 import dagster._seven as seven
 from dagster import (
@@ -375,6 +376,24 @@ def get_materialized_partitions_subset(
             if validated_keys
             else partitions_def.empty_subset()
         )
+
+
+def get_num_failed_partitions(
+    instance: DagsterInstance,
+    asset_key: AssetKey,
+) -> int:
+    incomplete_materialization_runs = instance.event_log_storage.get_latest_asset_partition_materialization_attempts_without_materializations(
+        asset_key
+    )
+    run_ids = incomplete_materialization_runs.values()
+
+    return (
+        instance.get_runs_count(
+            filters=RunsFilter(run_ids=list(run_ids), statuses=[DagsterRunStatus.FAILURE])
+        )
+        if run_ids
+        else 0
+    )
 
 
 def build_materialized_partitions(
